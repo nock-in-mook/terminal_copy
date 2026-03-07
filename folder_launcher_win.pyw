@@ -26,6 +26,8 @@ SCREEN_USE_RATIO = 0.95
 # 上下マージン（画面高さに対する割合）
 MARGIN_TOP_RATIO = 0.10
 MARGIN_BOTTOM_RATIO = 0.10
+# ウィンドウ影の重なり補正（論理ピクセル）
+SHADOW_OVERLAP = 14
 
 
 def get_folders():
@@ -101,14 +103,16 @@ def open_terminals(folder_names):
         rects.append((rect.left, hwnd))
     rects.sort(key=lambda r: r[0])
 
-    # 右端から左に向かって隙間なく配置
+    # 右端から左に向かって影を重ねて隙間なく配置
     total_count = len(rects)
     total_w = int(sw * SCREEN_USE_RATIO)
-    win_w = total_w // total_count
+    win_w = (total_w + SHADOW_OVERLAP * (total_count - 1)) // total_count
     x = sw
     for i in range(total_count - 1, -1, -1):
         _, hwnd = rects[i]
         x -= win_w
+        if i < total_count - 1:
+            x += SHADOW_OVERLAP
         user32.MoveWindow(hwnd, x, margin_top, win_w, win_h, True)
 
 
