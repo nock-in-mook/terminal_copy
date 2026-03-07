@@ -39,13 +39,11 @@ if exist "%WT_SETTINGS%" (
     "%PYTHON%" "%~dp0_setup_wt.py"
 )
 
-:: Build exe
+:: Build exe（毎回再生成して最新状態を保証）
 set "LAUNCHER_EXE=%~dp0即ランチャー.exe"
-if not exist "%LAUNCHER_EXE%" (
-    echo Building exe...
-    set "PYTHONUTF8=1"
-    "%PYTHON%" "%~dp0_build_exe.py"
-)
+echo Building exe...
+set "PYTHONUTF8=1"
+"%PYTHON%" "%~dp0_build_exe.py"
 
 :: Shortcuts
 set "SCRIPT=%~dp0folder_launcher_win.pyw"
