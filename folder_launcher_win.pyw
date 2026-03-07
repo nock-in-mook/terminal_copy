@@ -64,10 +64,10 @@ def _reposition_windows():
         rects.append((rect.left, hwnd))
     rects.sort(key=lambda r: r[0])
 
-    # 配置計算
+    # 配置計算（幅は常にMAX_TERMINALS分割時と同じ固定幅）
     total_count = len(rects)
     total_w = int(sw * SCREEN_USE_RATIO)
-    win_w = (total_w + SHADOW_OVERLAP * (total_count - 1)) // total_count
+    win_w = (total_w + SHADOW_OVERLAP * (MAX_TERMINALS - 1)) // MAX_TERMINALS
     margin_top = int(sh * MARGIN_TOP_RATIO)
     win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
 
