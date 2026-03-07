@@ -3,16 +3,15 @@
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - Windows版フォルダランチャー（folder_launcher_win.pyw）完成・動作確認済み
-- Mac版フォルダランチャー（folder_launcher.py）をWindows版と同等機能に改良済み（未テスト部分あり）
+- Mac版フォルダランチャー（folder_launcher.py）大幅簡素化・動作確認済み
 
 ## Mac版の変更点（今セッション）
-- cdコピーのみだった旧版を全面改修
-- Terminal.app + AppleScriptでターミナル起動・配置
-- **左寄せ配置**（Dockが左にあるため。Windows版は右寄せ）
-- rumpsのサブメニューで2/3 split選択（tkinter不要）
-- claude --dangerously-skip-permissions 自動起動
-- images/textフォルダ除外
-- メニュー構成: 1 single → 2 split → 3 split → (区切り) → Show All → (区切り) → Refresh / Close All / Quit
+- AppKitでDock幅を動的取得し、左マージンに反映
+- ウィンドウ幅を画面幅の20%（1/5）に変更
+- split系メニュー（2/3/4 split）を廃止し、[OPEN]サブメニュー一本に簡素化
+- MAX_TERMINALS を4に変更
+- フォルダ大量時（44個テスト済み）もスクロールで問題なし
+- close_allの確認ダイアログを1回に簡素化
 
 ## Mac環境設定
 - タイトルバーダブルクリック → 「何もしない」に変更済み（AppleActionOnDoubleClick=None）
@@ -26,7 +25,6 @@
 - フォント: UDEV Gothic
 
 ## 次のアクション
-- Mac版の動作テスト（1 single / 2 split / 3 split / Show All / Close All）
-- ウィンドウ配置の微調整（影の補正が不要か確認、マージン調整）
-- Terminal.appフルスクリーン問題: Ctrl+Command+F で手動解除が必要（osascriptキー操作は権限不足）
+- デバッグログ（logging）を本番では削除 or 無効化を検討
 - launcher.batにUDEV Gothicフォント自動インストール処理を追加するとベター
+- Terminal.appフルスクリーン問題: Ctrl+Command+F で手動解除が必要

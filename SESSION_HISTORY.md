@@ -5535,3 +5535,11 @@ aaa
 - claude --dangerously-skip-permissions 自動起動
 - タイトルバーダブルクリック無効化設定
 
+
+---
+## terminal_copy_004_Dock幅マージン・OPEN一本化 (2026-03-07)
+- AppKitでDock幅動的取得、左マージン反映
+- ウィンドウ幅を画面幅20%に変更
+- split廃止→[OPEN]一本化
+- MAX_TERMINALS=4
+- フォルダ大量表示テスト済み
