@@ -23,7 +23,7 @@ echo Python: %PYTHON%
 "%PYTHON%" -c "import pystray" >nul 2>&1
 if errorlevel 1 (
     echo Installing packages...
-    "%PYTHON%" -m pip install pystray pillow --quiet
+    "%PYTHON%" -m pip install pystray pillow pefile --quiet
 )
 
 :: Check Windows Terminal
@@ -35,13 +35,19 @@ if errorlevel 1 (
 
 :: WT settings
 set "WT_SETTINGS=%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
-set "WT_SCRIPT=%~dp0_setup_wt.py"
 if exist "%WT_SETTINGS%" (
-    "%PYTHON%" "%WT_SCRIPT%"
+    "%PYTHON%" "%~dp0_setup_wt.py"
+)
+
+:: Build exe
+set "LAUNCHER_EXE=%~dp0即ランチャー.exe"
+if not exist "%LAUNCHER_EXE%" (
+    echo Building exe...
+    set "PYTHONUTF8=1"
+    "%PYTHON%" "%~dp0_build_exe.py"
 )
 
 :: Shortcuts
-set "LAUNCHER_EXE=%~dp0即ランチャー.exe"
 set "SCRIPT=%~dp0folder_launcher_win.pyw"
 set "ICO=%~dp0app.ico"
 set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\即ランチャー.lnk"
