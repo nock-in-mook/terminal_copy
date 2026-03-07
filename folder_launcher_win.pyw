@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # folder_launcher_win.pyw
 # Windows版フォルダランチャー：システムトレイ常駐
-# - フォルダ一覧クリック → cd "パス" をクリップボードにコピー
-# - 1〜4ターミナル起動 → 右寄せ・隙間なしで横に並べる
+# - [1 single] サブメニューからフォルダ選択 → 即起動
+# - [2 split] [3 split] → 選択UIで複数選択 → Launch
+# - 最大3ウィンドウ制限、Show All、Close All
 
 import os
 import subprocess
@@ -11,6 +12,7 @@ import ctypes
 import ctypes.wintypes
 import time
 import tkinter as tk
+from tkinter import messagebox
 import pystray
 from PIL import Image, ImageDraw
 
@@ -28,6 +30,8 @@ MARGIN_TOP_RATIO = 0.10
 MARGIN_BOTTOM_RATIO = 0.10
 # ウィンドウ影の重なり補正（論理ピクセル）
 SHADOW_OVERLAP = 14
+# 最大ウィンドウ数
+MAX_TERMINALS = 3
 
 
 def get_folders():
@@ -40,12 +44,40 @@ def get_folders():
         return []
 
 
-def copy_cd(folder_name):
-    """cdコマンドをクリップボードにコピー"""
-    full_path = os.path.join(APPS_DIR, folder_name)
-    cmd = f'cd "{full_path}"'
-    proc = subprocess.Popen(['clip.exe'], stdin=subprocess.PIPE)
-    proc.communicate(cmd.encode('utf-16-le'))
+def _reposition_windows():
+    """全WTウィンドウを右寄せで再配置"""
+    user32 = ctypes.windll.user32
+    sw = user32.GetSystemMetrics(0)
+    sh = user32.GetSystemMetrics(1)
+
+    all_hwnds = _find_wt_windows()
+    if not all_hwnds:
+        return
+
+    all_hwnds = all_hwnds[:MAX_TERMINALS]
+
+    # x座標でソート
+    rects = []
+    rect = ctypes.wintypes.RECT()
+    for hwnd in all_hwnds:
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        rects.append((rect.left, hwnd))
+    rects.sort(key=lambda r: r[0])
+
+    # 配置計算
+    total_count = len(rects)
+    total_w = int(sw * SCREEN_USE_RATIO)
+    win_w = (total_w + SHADOW_OVERLAP * (total_count - 1)) // total_count
+    margin_top = int(sh * MARGIN_TOP_RATIO)
+    win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
+
+    x = sw
+    for i in range(total_count - 1, -1, -1):
+        _, hwnd = rects[i]
+        x -= win_w
+        if i < total_count - 1:
+            x += SHADOW_OVERLAP
+        user32.MoveWindow(hwnd, x, margin_top, win_w, win_h, True)
 
 
 def open_terminals(folder_names):
@@ -53,21 +85,9 @@ def open_terminals(folder_names):
     if not folder_names:
         return
 
-    user32 = ctypes.windll.user32
-    sw = user32.GetSystemMetrics(0)
-    sh = user32.GetSystemMetrics(1)
-    n = len(folder_names)
-
-    # 画面幅をウィンドウ数で均等割り（SCREEN_USE_RATIO分だけ使用、右寄せ）
-    total_w = int(sw * SCREEN_USE_RATIO)
-    win_w = total_w // n
-
-    # 上下マージン
-    margin_top = int(sh * MARGIN_TOP_RATIO)
-    win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
-
     # 起動前のWTウィンドウを記録
     before_hwnds = set(_find_wt_windows())
+    n = len(folder_names)
 
     # 新しいターミナルを起動（タブタイトル設定 + Claude自動起動）
     for name in folder_names:
@@ -87,33 +107,7 @@ def open_terminals(folder_names):
         if len(new_hwnds) >= n:
             break
 
-    # 全WTウィンドウ（既存＋新規）を取得して再配置
-    all_hwnds = _find_wt_windows()
-    if not all_hwnds:
-        return
-
-    # 最大3つまで
-    all_hwnds = all_hwnds[:3]
-
-    # x座標でソート（既存のウィンドウの並び順を維持）
-    rects = []
-    rect = ctypes.wintypes.RECT()
-    for hwnd in all_hwnds:
-        user32.GetWindowRect(hwnd, ctypes.byref(rect))
-        rects.append((rect.left, hwnd))
-    rects.sort(key=lambda r: r[0])
-
-    # 右端から左に向かって影を重ねて隙間なく配置
-    total_count = len(rects)
-    total_w = int(sw * SCREEN_USE_RATIO)
-    win_w = (total_w + SHADOW_OVERLAP * (total_count - 1)) // total_count
-    x = sw
-    for i in range(total_count - 1, -1, -1):
-        _, hwnd = rects[i]
-        x -= win_w
-        if i < total_count - 1:
-            x += SHADOW_OVERLAP
-        user32.MoveWindow(hwnd, x, margin_top, win_w, win_h, True)
+    _reposition_windows()
 
 
 def _find_wt_windows():
@@ -142,6 +136,15 @@ def bring_terminals_to_front():
         user32.ShowWindow(hwnd, 9)  # SW_RESTORE
         user32.SetForegroundWindow(hwnd)
         time.sleep(0.05)
+
+
+def close_all_terminals():
+    """全WTウィンドウを閉じる"""
+    user32 = ctypes.windll.user32
+    hwnds = _find_wt_windows()
+    WM_CLOSE = 0x0010
+    for hwnd in hwnds:
+        user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
 
 
 def make_icon():
@@ -178,14 +181,14 @@ class App:
         self.split_win = w
 
         self.selected = []
-        self.split_count = 1
+        self.split_count = 2
 
         # 数ボタン
         count_frame = tk.Frame(w)
         count_frame.pack(fill="x", padx=8, pady=(8, 4))
         tk.Label(count_frame, text="Count:", font=("Segoe UI", 10)).pack(side="left")
         self.count_buttons = {}
-        for n in [1, 2, 3]:
+        for n in [2, 3]:
             btn = tk.Button(count_frame, text=str(n), width=3,
                             font=("Segoe UI", 10, "bold"),
                             command=lambda n=n: self._set_count(n))
@@ -221,7 +224,6 @@ class App:
         tk.Button(btn_frame, text="Reset", font=("Segoe UI", 10),
                   command=self._reset).pack(side="right", padx=4)
 
-        # 初期表示
         self.launch_btn.config(state="disabled")
 
         # ウィンドウサイズ・位置（右下寄り）
@@ -237,6 +239,21 @@ class App:
         self.root.after(0, lambda: self._show_split_main(count))
 
     def _show_split_main(self, count):
+        # 既存WT数チェック
+        current_count = len(_find_wt_windows())
+        if current_count + count > MAX_TERMINALS:
+            remaining = MAX_TERMINALS - current_count
+            if remaining <= 0:
+                messagebox.showwarning("Folder Launcher",
+                    f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
+                    f"Close some terminals first.")
+                return
+            else:
+                messagebox.showwarning("Folder Launcher",
+                    f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
+                    f"Can only add {remaining} more.")
+                count = remaining
+
         self.selected = []
         self.split_count = count
         self._highlight_count()
@@ -244,6 +261,16 @@ class App:
         self._refresh_sel()
         self.split_win.deiconify()
         self.split_win.lift()
+
+    def _open_single(self, folder_name):
+        """シングル起動: 既存WT数チェック後、1つ起動して再配置"""
+        current_count = len(_find_wt_windows())
+        if current_count >= MAX_TERMINALS:
+            self.root.after(0, lambda: messagebox.showwarning("Folder Launcher",
+                f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
+                f"Close some terminals first."))
+            return
+        open_terminals([folder_name])
 
     def _refresh_folders(self):
         self.folder_listbox.delete(0, tk.END)
@@ -309,31 +336,56 @@ class App:
             folders = list(self.selected)
             self.split_win.withdraw()
             self.selected = []
-            # 別スレッドで起動（UIブロック回避）
             threading.Thread(target=lambda: open_terminals(folders), daemon=True).start()
+
+    def _close_all(self):
+        """Close All: 確認2回してから全WT閉じる"""
+        def do_close():
+            count = len(_find_wt_windows())
+            if count == 0:
+                messagebox.showinfo("Folder Launcher", "No terminals open.")
+                return
+            r1 = messagebox.askyesno("Folder Launcher",
+                f"Close all {count} terminal(s)?")
+            if not r1:
+                return
+            r2 = messagebox.askyesno("Folder Launcher",
+                f"Are you sure? All unsaved work will be lost.")
+            if not r2:
+                return
+            close_all_terminals()
+        self.root.after(0, do_close)
 
     # === トレイメニュー ===
 
     def _build_menu(self):
         folders = get_folders()
         items = []
-        # フォルダ一覧 → cdコピー
-        for name in folders:
-            items.append(pystray.MenuItem(name, self._make_copy_callback(name)))
-        items.append(pystray.Menu.SEPARATOR)
-        # ターミナル起動
-        items.append(pystray.MenuItem("[1 single]", lambda: self._show_split(1)))
-        items.append(pystray.MenuItem("[2 split]", lambda: self._show_split(2)))
-        items.append(pystray.MenuItem("[3 split]", lambda: self._show_split(3)))
+
+        # Show All（一番上）
         items.append(pystray.MenuItem("[Show All]", lambda: bring_terminals_to_front()))
         items.append(pystray.Menu.SEPARATOR)
+
+        # [1 single] → サブメニューでフォルダ一覧
+        single_items = []
+        for name in folders:
+            single_items.append(pystray.MenuItem(name, self._make_single_callback(name)))
+        items.append(pystray.MenuItem("[1 single]", pystray.Menu(*single_items)))
+
+        # [2 split] [3 split] → 選択UI
+        items.append(pystray.MenuItem("[2 split]", lambda: self._show_split(2)))
+        items.append(pystray.MenuItem("[3 split]", lambda: self._show_split(3)))
+        items.append(pystray.Menu.SEPARATOR)
+
+        # Refresh, Close All, Quit
         items.append(pystray.MenuItem("Refresh", lambda: self._rebuild_menu()))
+        items.append(pystray.MenuItem("[Close All]", lambda: self._close_all()))
         items.append(pystray.MenuItem("Quit", lambda: self._quit()))
         return pystray.Menu(*items)
 
-    def _make_copy_callback(self, name):
+    def _make_single_callback(self, name):
         def callback():
-            copy_cd(name)
+            threading.Thread(target=lambda: self._open_single(name), daemon=True).start()
         return callback
 
     def _rebuild_menu(self):
