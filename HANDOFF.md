@@ -146,11 +146,5 @@ Quit
 6. 既存ターミナルがある状態で追加起動 → 再配置されるか確認
 
 ## 今セッションでの変更まとめ
-- SetProcessDPIAware削除 → 論理座標でWT幅を正しく制御
-- 最大3分割に制限
-- 固定幅（MAX_TERMINALS分割時の幅で統一）
-- 影の重なり補正(14px)で隙間ゼロ
-- メニュー大改善: [1 single]サブメニュー化、cdコピー削除、Close All追加、Show All最上部
-- WT設定: suppressApplicationTitle=true（タブタイトル維持）
-- launcher.bat: Python自動検出、WT設定自動化、ショートカット自動作成
-- スタートアップ/スタートメニュー登録
+- get_folders()にimages・textフォルダの除外フィルタを追加
+- 次: Mac版フォルダランチャーの改良（上記参照）
