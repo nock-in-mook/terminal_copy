@@ -38,8 +38,11 @@ def get_folders():
     """フォルダ一覧を取得"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
+        # 除外フォルダ
+        exclude = {'images', 'text'}
         return [e for e in entries
-                if not e.startswith('.') and os.path.isdir(os.path.join(APPS_DIR, e))]
+                if not e.startswith('.') and e not in exclude
+                and os.path.isdir(os.path.join(APPS_DIR, e))]
     except OSError:
         return []
 
