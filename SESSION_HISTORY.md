@@ -5526,3 +5526,12 @@ aaa
 - /end スキル・CLAUDE.mdのリネーム処理を全自動化
 - claude起動に--dangerously-skip-permissions追加
 - settings.local.json全許可に整理
+
+---
+## terminal_copy_002_Mac版ランチャー改良 (2026-03-07)
+- Mac版フォルダランチャーをWindows版と同等機能に全面改修
+- 左寄せ配置（Dock左配置対応）、rumpsサブメニューでsplit選択
+- Terminal.app + AppleScriptでターミナル起動・自動配置
+- claude --dangerously-skip-permissions 自動起動
+- タイトルバーダブルクリック無効化設定
+
