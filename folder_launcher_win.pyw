@@ -14,7 +14,7 @@ import tkinter as tk
 import pystray
 from PIL import Image, ImageDraw
 
-# DPIスケーリング対応（正確な画面サイズ・ウィンドウ位置を取得するため）
+# DPIスケーリング対応（物理ピクセルで正確に配置するため）
 ctypes.windll.user32.SetProcessDPIAware()
 
 # 監視対象の親ディレクトリ
@@ -57,8 +57,9 @@ def open_terminals(folder_names):
     sh = user32.GetSystemMetrics(1)
     n = len(folder_names)
 
-    # 固定幅（画面の23%）
-    win_w = int(sw * 0.23)
+    # 画面幅をウィンドウ数で均等割り（SCREEN_USE_RATIO分だけ使用、右寄せ）
+    total_w = int(sw * SCREEN_USE_RATIO)
+    win_w = total_w // n
 
     # 上下マージン
     margin_top = int(sh * MARGIN_TOP_RATIO)
@@ -90,8 +91,8 @@ def open_terminals(folder_names):
     if not all_hwnds:
         return
 
-    # 最大4つまで
-    all_hwnds = all_hwnds[:4]
+    # 最大3つまで
+    all_hwnds = all_hwnds[:3]
 
     # x座標でソート（既存のウィンドウの並び順を維持）
     rects = []
@@ -102,8 +103,11 @@ def open_terminals(folder_names):
     rects.sort(key=lambda r: r[0])
 
     # 右端から左に向かって隙間なく配置
+    total_count = len(rects)
+    total_w = int(sw * SCREEN_USE_RATIO)
+    win_w = total_w // total_count
     x = sw
-    for i in range(len(rects) - 1, -1, -1):
+    for i in range(total_count - 1, -1, -1):
         _, hwnd = rects[i]
         x -= win_w
         user32.MoveWindow(hwnd, x, margin_top, win_w, win_h, True)
@@ -125,6 +129,16 @@ def _find_wt_windows():
 
     user32.EnumWindows(enum_callback, 0)
     return hwnds
+
+
+def bring_terminals_to_front():
+    """全WTウィンドウを最前面に出す"""
+    user32 = ctypes.windll.user32
+    hwnds = _find_wt_windows()
+    for hwnd in reversed(hwnds):
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        user32.SetForegroundWindow(hwnd)
+        time.sleep(0.05)
 
 
 def make_icon():
@@ -168,7 +182,7 @@ class App:
         count_frame.pack(fill="x", padx=8, pady=(8, 4))
         tk.Label(count_frame, text="Count:", font=("Segoe UI", 10)).pack(side="left")
         self.count_buttons = {}
-        for n in [1, 2, 3, 4]:
+        for n in [1, 2, 3]:
             btn = tk.Button(count_frame, text=str(n), width=3,
                             font=("Segoe UI", 10, "bold"),
                             command=lambda n=n: self._set_count(n))
@@ -178,7 +192,7 @@ class App:
         # 選択済みリスト
         sel_frame = tk.LabelFrame(w, text="Selected (left to right)", font=("Segoe UI", 9))
         sel_frame.pack(fill="x", padx=8, pady=4)
-        self.sel_listbox = tk.Listbox(sel_frame, height=4, font=("Segoe UI", 10),
+        self.sel_listbox = tk.Listbox(sel_frame, height=3, font=("Segoe UI", 10),
                                        selectbackground="#ffcccc")
         self.sel_listbox.pack(fill="x", padx=4, pady=4)
         self.sel_listbox.bind("<Button-1>", self._on_sel_click)
@@ -308,7 +322,7 @@ class App:
         items.append(pystray.MenuItem("[1 single]", lambda: self._show_split(1)))
         items.append(pystray.MenuItem("[2 split]", lambda: self._show_split(2)))
         items.append(pystray.MenuItem("[3 split]", lambda: self._show_split(3)))
-        items.append(pystray.MenuItem("[4 split]", lambda: self._show_split(4)))
+        items.append(pystray.MenuItem("[Show All]", lambda: bring_terminals_to_front()))
         items.append(pystray.Menu.SEPARATOR)
         items.append(pystray.MenuItem("Refresh", lambda: self._rebuild_menu()))
         items.append(pystray.MenuItem("Quit", lambda: self._quit()))
