@@ -147,4 +147,7 @@ Quit
 
 ## 今セッションでの変更まとめ
 - get_folders()にimages・textフォルダの除外フィルタを追加
+- WTフォントをUDEV Gothicに変更（日本語の文字間スキマ解消）
+- /end スキルとCLAUDE.mdのセッション名リネームを確認不要・全自動に変更
 - 次: Mac版フォルダランチャーの改良（上記参照）
+- 次: launcher.batにUDEV Gothicフォント自動インストール処理を追加するとベター
