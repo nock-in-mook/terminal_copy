@@ -97,7 +97,7 @@ def open_terminals(folder_names):
         full_path = os.path.join(APPS_DIR, name)
         env = os.environ.copy()
         env.pop('CLAUDECODE', None)
-        subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude'],
+        subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
                          creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
                          env=env)
         time.sleep(0.5)
