@@ -1,17 +1,32 @@
 #!/usr/bin/env python3
 # folder_launcher_win.pyw
 # Windows版フォルダランチャー：システムトレイ常駐
-# アイコンクリック → フォルダ一覧メニュー → クリックでcdコマンドをクリップボードにコピー
+# - フォルダ一覧クリック → cd "パス" をクリップボードにコピー
+# - 1〜4ターミナル起動 → 右寄せ・隙間なしで横に並べる
 
 import os
 import subprocess
+import threading
+import ctypes
+import ctypes.wintypes
+import time
+import tkinter as tk
 import pystray
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
+
+# DPIスケーリング対応（正確な画面サイズ・ウィンドウ位置を取得するため）
+ctypes.windll.user32.SetProcessDPIAware()
 
 # 監視対象の親ディレクトリ
 APPS_DIR = os.path.join(os.environ.get("USERPROFILE", ""), "Dropbox", "_Apps2026")
 if not os.path.isdir(APPS_DIR):
     APPS_DIR = r"D:\Dropbox\_Apps2026"
+
+# 画面の何%をターミナルに使うか（右寄せ。残りが左端のアイコン用余白）
+SCREEN_USE_RATIO = 0.95
+# 上下マージン（画面高さに対する割合）
+MARGIN_TOP_RATIO = 0.10
+MARGIN_BOTTOM_RATIO = 0.10
 
 
 def get_folders():
@@ -24,10 +39,89 @@ def get_folders():
         return []
 
 
-def open_terminal(folder_name):
-    """Windows Terminalでそのフォルダを開く"""
+def copy_cd(folder_name):
+    """cdコマンドをクリップボードにコピー"""
     full_path = os.path.join(APPS_DIR, folder_name)
-    subprocess.Popen(['wt', '-d', full_path])
+    cmd = f'cd "{full_path}"'
+    proc = subprocess.Popen(['clip.exe'], stdin=subprocess.PIPE)
+    proc.communicate(cmd.encode('utf-16-le'))
+
+
+def open_terminals(folder_names):
+    """Windows Terminalウィンドウを起動し、全WT（既存含む）を右寄せで再配置"""
+    if not folder_names:
+        return
+
+    user32 = ctypes.windll.user32
+    sw = user32.GetSystemMetrics(0)
+    sh = user32.GetSystemMetrics(1)
+    n = len(folder_names)
+
+    # 固定幅（画面の23%）
+    win_w = int(sw * 0.23)
+
+    # 上下マージン
+    margin_top = int(sh * MARGIN_TOP_RATIO)
+    win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
+
+    # 起動前のWTウィンドウを記録
+    before_hwnds = set(_find_wt_windows())
+
+    # 新しいターミナルを起動（タブタイトルにフォルダ名を設定）
+    for name in folder_names:
+        full_path = os.path.join(APPS_DIR, name)
+        subprocess.Popen(['wt', '--title', name, '-d', full_path],
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+        time.sleep(0.5)
+
+    # 新しいウィンドウが出揃うのを待つ
+    for _ in range(20):
+        time.sleep(0.3)
+        current = set(_find_wt_windows())
+        new_hwnds = list(current - before_hwnds)
+        if len(new_hwnds) >= n:
+            break
+
+    # 全WTウィンドウ（既存＋新規）を取得して再配置
+    all_hwnds = _find_wt_windows()
+    if not all_hwnds:
+        return
+
+    # 最大4つまで
+    all_hwnds = all_hwnds[:4]
+
+    # x座標でソート（既存のウィンドウの並び順を維持）
+    rects = []
+    rect = ctypes.wintypes.RECT()
+    for hwnd in all_hwnds:
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        rects.append((rect.left, hwnd))
+    rects.sort(key=lambda r: r[0])
+
+    # 右端から左に向かって隙間なく配置
+    x = sw
+    for i in range(len(rects) - 1, -1, -1):
+        _, hwnd = rects[i]
+        x -= win_w
+        user32.MoveWindow(hwnd, x, margin_top, win_w, win_h, True)
+
+
+def _find_wt_windows():
+    """Windows Terminalのトップレベルウィンドウハンドルを全て取得"""
+    user32 = ctypes.windll.user32
+    hwnds = []
+
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+    def enum_callback(hwnd, lparam):
+        if user32.IsWindowVisible(hwnd):
+            cls_buf = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(hwnd, cls_buf, 256)
+            if 'CASCADIA_HOSTING_WINDOW_CLASS' in cls_buf.value:
+                hwnds.append(hwnd)
+        return True
+
+    user32.EnumWindows(enum_callback, 0)
+    return hwnds
 
 
 def make_icon():
@@ -35,8 +129,7 @@ def make_icon():
     size = 256
     img = Image.new('RGBA', (size, size), (0, 120, 212, 255))
     draw = ImageDraw.Draw(img)
-    # フォルダアイコンを描画
-    s = size / 64  # スケール係数
+    s = size / 64
     draw.rectangle([int(8*s), int(20*s), int(56*s), int(52*s)],
                     fill=(255, 200, 50, 255), outline=(200, 150, 0, 255), width=int(3*s))
     draw.rectangle([int(8*s), int(14*s), int(28*s), int(24*s)],
@@ -44,31 +137,195 @@ def make_icon():
     return img
 
 
-def make_callback(folder_name):
-    """クロージャでフォルダ名を確定"""
-    def callback():
-        open_terminal(folder_name)
-    return callback
+# === メインアプリ ===
+
+class App:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.withdraw()
+        self._build_split_window()
+        self.icon = pystray.Icon("folder_launcher", make_icon(), "Folder Launcher", self._build_menu())
+        self.icon.HAS_DEFAULT_ACTION = False
+        threading.Thread(target=self.icon.run, daemon=True).start()
+
+    def _build_split_window(self):
+        """ターミナル選択ウィンドウを構築（非表示状態で保持）"""
+        w = tk.Toplevel(self.root)
+        w.title("Open Terminals")
+        w.attributes("-topmost", True)
+        w.resizable(False, True)
+        w.protocol("WM_DELETE_WINDOW", lambda: w.withdraw())
+        self.split_win = w
+
+        self.selected = []
+        self.split_count = 1
+
+        # 数ボタン
+        count_frame = tk.Frame(w)
+        count_frame.pack(fill="x", padx=8, pady=(8, 4))
+        tk.Label(count_frame, text="Count:", font=("Segoe UI", 10)).pack(side="left")
+        self.count_buttons = {}
+        for n in [1, 2, 3, 4]:
+            btn = tk.Button(count_frame, text=str(n), width=3,
+                            font=("Segoe UI", 10, "bold"),
+                            command=lambda n=n: self._set_count(n))
+            btn.pack(side="left", padx=2)
+            self.count_buttons[n] = btn
+
+        # 選択済みリスト
+        sel_frame = tk.LabelFrame(w, text="Selected (left to right)", font=("Segoe UI", 9))
+        sel_frame.pack(fill="x", padx=8, pady=4)
+        self.sel_listbox = tk.Listbox(sel_frame, height=4, font=("Segoe UI", 10),
+                                       selectbackground="#ffcccc")
+        self.sel_listbox.pack(fill="x", padx=4, pady=4)
+        self.sel_listbox.bind("<Button-1>", self._on_sel_click)
+
+        # フォルダ一覧（スクロール付き）
+        folder_frame = tk.LabelFrame(w, text="Folders", font=("Segoe UI", 9))
+        folder_frame.pack(fill="both", expand=True, padx=8, pady=4)
+        folder_scroll = tk.Scrollbar(folder_frame)
+        folder_scroll.pack(side="right", fill="y")
+        self.folder_listbox = tk.Listbox(folder_frame, font=("Segoe UI", 10),
+                                          selectbackground="#cce5ff",
+                                          yscrollcommand=folder_scroll.set)
+        self.folder_listbox.pack(fill="both", expand=True, padx=4, pady=4)
+        folder_scroll.config(command=self.folder_listbox.yview)
+        self.folder_listbox.bind("<Button-1>", self._on_folder_click)
+
+        # ボタン
+        btn_frame = tk.Frame(w)
+        btn_frame.pack(fill="x", padx=8, pady=(4, 8))
+        self.launch_btn = tk.Button(btn_frame, text="Launch", font=("Segoe UI", 10, "bold"),
+                                     state="disabled", command=self._launch)
+        self.launch_btn.pack(side="right", padx=4)
+        tk.Button(btn_frame, text="Reset", font=("Segoe UI", 10),
+                  command=self._reset).pack(side="right", padx=4)
+
+        # 初期表示
+        self.launch_btn.config(state="disabled")
+
+        # ウィンドウサイズ・位置（右下寄り）
+        w.update_idletasks()
+        scr_w = w.winfo_screenwidth()
+        scr_h = w.winfo_screenheight()
+        ww, wh = 280, 700
+        taskbar_h = 48
+        w.geometry(f"{ww}x{wh}+{scr_w - ww}+{scr_h - wh - taskbar_h}")
+        w.withdraw()
+
+    def _show_split(self, count):
+        self.root.after(0, lambda: self._show_split_main(count))
+
+    def _show_split_main(self, count):
+        self.selected = []
+        self.split_count = count
+        self._highlight_count()
+        self._refresh_folders()
+        self._refresh_sel()
+        self.split_win.deiconify()
+        self.split_win.lift()
+
+    def _refresh_folders(self):
+        self.folder_listbox.delete(0, tk.END)
+        for name in get_folders():
+            self.folder_listbox.insert(tk.END, name)
+
+    def _set_count(self, n):
+        self.split_count = n
+        if len(self.selected) > n:
+            self.selected = self.selected[:n]
+        self._highlight_count()
+        self._refresh_sel()
+
+    def _highlight_count(self):
+        for num, btn in self.count_buttons.items():
+            if num == self.split_count:
+                btn.config(bg="#0078D4", fg="white")
+            else:
+                btn.config(bg="SystemButtonFace", fg="black")
+
+    def _refresh_sel(self):
+        self.sel_listbox.delete(0, tk.END)
+        for i in range(self.split_count):
+            if i < len(self.selected):
+                self.sel_listbox.insert(tk.END, f"{i+1}. {self.selected[i]}")
+            else:
+                self.sel_listbox.insert(tk.END, f"{i+1}. ---")
+        if len(self.selected) == self.split_count:
+            self.launch_btn.config(state="normal")
+        else:
+            self.launch_btn.config(state="disabled")
+
+    def _on_folder_click(self, event):
+        self.folder_listbox.after(50, self._add_selected)
+
+    def _add_selected(self):
+        sel = self.folder_listbox.curselection()
+        if not sel:
+            return
+        name = self.folder_listbox.get(sel[0])
+        if len(self.selected) < self.split_count and name not in self.selected:
+            self.selected.append(name)
+            self._refresh_sel()
+
+    def _on_sel_click(self, event):
+        self.sel_listbox.after(50, self._remove_selected)
+
+    def _remove_selected(self):
+        sel = self.sel_listbox.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        if idx < len(self.selected):
+            self.selected.pop(idx)
+            self._refresh_sel()
+
+    def _reset(self):
+        self.selected = []
+        self._refresh_sel()
+
+    def _launch(self):
+        if self.selected:
+            folders = list(self.selected)
+            self.split_win.withdraw()
+            self.selected = []
+            # 別スレッドで起動（UIブロック回避）
+            threading.Thread(target=lambda: open_terminals(folders), daemon=True).start()
+
+    # === トレイメニュー ===
+
+    def _build_menu(self):
+        folders = get_folders()
+        items = []
+        # フォルダ一覧 → cdコピー
+        for name in folders:
+            items.append(pystray.MenuItem(name, self._make_copy_callback(name)))
+        items.append(pystray.Menu.SEPARATOR)
+        # ターミナル起動
+        items.append(pystray.MenuItem("[1 single]", lambda: self._show_split(1)))
+        items.append(pystray.MenuItem("[2 split]", lambda: self._show_split(2)))
+        items.append(pystray.MenuItem("[3 split]", lambda: self._show_split(3)))
+        items.append(pystray.MenuItem("[4 split]", lambda: self._show_split(4)))
+        items.append(pystray.Menu.SEPARATOR)
+        items.append(pystray.MenuItem("Refresh", lambda: self._rebuild_menu()))
+        items.append(pystray.MenuItem("Quit", lambda: self._quit()))
+        return pystray.Menu(*items)
+
+    def _make_copy_callback(self, name):
+        def callback():
+            copy_cd(name)
+        return callback
+
+    def _rebuild_menu(self):
+        self.icon.menu = self._build_menu()
+
+    def _quit(self):
+        self.icon.stop()
+        self.root.after(0, self.root.destroy)
+
+    def run(self):
+        self.root.mainloop()
 
 
-def build_menu():
-    """メニュー構築"""
-    folders = get_folders()
-    items = []
-    for name in folders:
-        items.append(pystray.MenuItem(name, make_callback(name)))
-    items.append(pystray.Menu.SEPARATOR)
-    items.append(pystray.MenuItem("Refresh", lambda: rebuild_menu()))
-    items.append(pystray.MenuItem("Quit", lambda: icon.stop()))
-    return pystray.Menu(*items)
-
-
-def rebuild_menu():
-    """メニューを再構築"""
-    icon.menu = build_menu()
-
-
-icon = pystray.Icon("folder_launcher", make_icon(), "Folder Launcher", build_menu())
-# 左クリックでもメニューを表示（pystray Win32バックエンド）
-icon.HAS_DEFAULT_ACTION = False
-icon.run()
+if __name__ == "__main__":
+    App().run()
