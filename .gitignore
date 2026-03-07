@@ -1,2 +1,7 @@
 remote_bat*.bat
 remote_start*.sh
+# ランチャー用バイナリ（各PCで生成）
+即ランチャー.exe
+python3.dll
+python314.dll
+python314._pth

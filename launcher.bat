@@ -1,17 +1,15 @@
 @echo off
 chcp 65001 >nul
-title Folder Launcher Setup
+title Setup
 
-:: Python検出（C:\Python314 → py コマンド → エラー）
+:: Python
 set "PYTHON="
 if exist "C:\Python314\python.exe" (
     set "PYTHON=C:\Python314\python.exe"
-    set "PYTHONW=C:\Python314\pythonw.exe"
 ) else (
     where py >nul 2>&1
     if not errorlevel 1 (
         for /f "delims=" %%i in ('py -c "import sys; print(sys.executable)"') do set "PYTHON=%%i"
-        for /f "delims=" %%i in ('py -c "import sys,os; print(os.path.join(os.path.dirname(sys.executable), \"pythonw.exe\"))"') do set "PYTHONW=%%i"
     )
 )
 if "%PYTHON%"=="" (
@@ -35,24 +33,32 @@ if errorlevel 1 (
     winget install Microsoft.WindowsTerminal --accept-source-agreements --accept-package-agreements
 )
 
-:: WT設定: ライトテーマ + suppressApplicationTitle
+:: WT settings
 set "WT_SETTINGS=%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+set "WT_SCRIPT=%~dp0_setup_wt.py"
 if exist "%WT_SETTINGS%" (
-    "%PYTHON%" -c "import json,os;p=os.environ['WT_SETTINGS'];d=json.load(open(p,encoding='utf-8'));df=d.setdefault('profiles',{}).setdefault('defaults',{});changed=False;exec(\"\"\"if df.get('colorScheme')!='One Half Light':\n df['colorScheme']='One Half Light';changed=True\nif not df.get('suppressApplicationTitle'):\n df['suppressApplicationTitle']=True;changed=True\"\"\")\nif changed:\n json.dump(d,open(p,'w',encoding='utf-8'),indent=4,ensure_ascii=False);print('WT settings updated')\nelse:\n print('WT settings OK')"
+    "%PYTHON%" "%WT_SCRIPT%"
 )
 
-:: スタートアップにショートカット作成
-set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Folder Launcher.lnk"
-set "STARTMENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk"
+:: Shortcuts
+set "LAUNCHER_EXE=%~dp0即ランチャー.exe"
+set "SCRIPT=%~dp0folder_launcher_win.pyw"
+set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\即ランチャー.lnk"
+set "STARTMENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\即ランチャー.lnk"
+
+:: Delete old shortcuts
+if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Folder Launcher.lnk" del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Folder Launcher.lnk"
+if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk" del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk"
+
 if not exist "%STARTUP%" (
-    powershell -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTUP%');$s.TargetPath='%PYTHONW%';$s.Arguments='%~dp0folder_launcher_win.pyw';$s.WorkingDirectory='%~dp0';$s.Save()"
+    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTUP%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.Save()"
     echo Startup shortcut created
 )
 if not exist "%STARTMENU%" (
-    powershell -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTMENU%');$s.TargetPath='%PYTHONW%';$s.Arguments='%~dp0folder_launcher_win.pyw';$s.WorkingDirectory='%~dp0';$s.Save()"
+    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTMENU%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.Save()"
     echo Start Menu shortcut created
 )
 
 :: Launch
-echo Starting Folder Launcher...
-start "" "%PYTHONW%" "%~dp0folder_launcher_win.pyw"
+echo Starting...
+start "" "%LAUNCHER_EXE%" "%SCRIPT%"

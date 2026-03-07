@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # folder_launcher_win.pyw
-# Windows版フォルダランチャー：システムトレイ常駐
+# 即ランチャー（Windows版）：システムトレイ常駐
 # - OPEN サブメニューからフォルダ選択 → 即起動
 # - 最大3ウィンドウ制限、Show All、Close All
 
@@ -14,6 +14,10 @@ import tkinter as tk
 from tkinter import messagebox
 import pystray
 from PIL import Image, ImageDraw
+
+# タスクトレイ等でのアプリ名を「即ランチャー」にする（pythonw.exe表示を防ぐ）
+APP_ID = "SokuLauncher.即ランチャー"
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
 
 # DPIスケーリング: 呼ばない方がMoveWindowの論理座標でWTを狭くできる
 
@@ -168,7 +172,7 @@ class App:
     def __init__(self):
         self.root = tk.Tk()
         self.root.withdraw()
-        self.icon = pystray.Icon("folder_launcher", make_icon(), "Folder Launcher", self._build_menu())
+        self.icon = pystray.Icon("即ランチャー", make_icon(), "即ランチャー", self._build_menu())
         self.icon.HAS_DEFAULT_ACTION = False
         threading.Thread(target=self.icon.run, daemon=True).start()
 
@@ -176,7 +180,7 @@ class App:
         """シングル起動: 既存WT数チェック後、1つ起動して再配置"""
         current_count = len(_find_wt_windows())
         if current_count >= MAX_TERMINALS:
-            self.root.after(0, lambda: messagebox.showwarning("Folder Launcher",
+            self.root.after(0, lambda: messagebox.showwarning("即ランチャー",
                 f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
                 f"Close some terminals first."))
             return
@@ -187,13 +191,13 @@ class App:
         def do_close():
             count = len(_find_wt_windows())
             if count == 0:
-                messagebox.showinfo("Folder Launcher", "No terminals open.")
+                messagebox.showinfo("即ランチャー", "No terminals open.")
                 return
-            r1 = messagebox.askyesno("Folder Launcher",
+            r1 = messagebox.askyesno("即ランチャー",
                 f"Close all {count} terminal(s)?")
             if not r1:
                 return
-            r2 = messagebox.askyesno("Folder Launcher",
+            r2 = messagebox.askyesno("即ランチャー",
                 f"Are you sure? All unsaved work will be lost.")
             if not r2:
                 return
@@ -233,7 +237,7 @@ class App:
 
     def _quit(self):
         def do_quit():
-            if messagebox.askyesno("Folder Launcher", "Quit Folder Launcher?"):
+            if messagebox.askyesno("即ランチャー", "Quit Folder Launcher?"):
                 self.icon.stop()
                 self.root.destroy()
         self.root.after(0, do_quit)
