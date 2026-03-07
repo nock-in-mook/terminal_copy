@@ -14,8 +14,7 @@ import tkinter as tk
 import pystray
 from PIL import Image, ImageDraw
 
-# DPIスケーリング対応（物理ピクセルで正確に配置するため）
-ctypes.windll.user32.SetProcessDPIAware()
+# DPIスケーリング: 呼ばない方がMoveWindowの論理座標でWTを狭くできる
 
 # 監視対象の親ディレクトリ
 APPS_DIR = os.path.join(os.environ.get("USERPROFILE", ""), "Dropbox", "_Apps2026")
