@@ -67,11 +67,14 @@ def open_terminals(folder_names):
     # 起動前のWTウィンドウを記録
     before_hwnds = set(_find_wt_windows())
 
-    # 新しいターミナルを起動（タブタイトルにフォルダ名を設定）
+    # 新しいターミナルを起動（タブタイトル設定 + Claude自動起動）
     for name in folder_names:
         full_path = os.path.join(APPS_DIR, name)
-        subprocess.Popen(['wt', '--title', name, '-d', full_path],
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+        env = os.environ.copy()
+        env.pop('CLAUDECODE', None)
+        subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude'],
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                         env=env)
         time.sleep(0.5)
 
     # 新しいウィンドウが出揃うのを待つ
