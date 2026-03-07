@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # folder_launcher_win.pyw
 # Windows版フォルダランチャー：システムトレイ常駐
-# - [1 single] サブメニューからフォルダ選択 → 即起動
-# - [2 split] [3 split] → 選択UIで複数選択 → Launch
+# - OPEN サブメニューからフォルダ選択 → 即起動
 # - 最大3ウィンドウ制限、Show All、Close All
 
 import os
@@ -169,101 +168,9 @@ class App:
     def __init__(self):
         self.root = tk.Tk()
         self.root.withdraw()
-        self._build_split_window()
         self.icon = pystray.Icon("folder_launcher", make_icon(), "Folder Launcher", self._build_menu())
         self.icon.HAS_DEFAULT_ACTION = False
         threading.Thread(target=self.icon.run, daemon=True).start()
-
-    def _build_split_window(self):
-        """ターミナル選択ウィンドウを構築（非表示状態で保持）"""
-        w = tk.Toplevel(self.root)
-        w.title("Open Terminals")
-        w.attributes("-topmost", True)
-        w.resizable(False, True)
-        w.protocol("WM_DELETE_WINDOW", lambda: w.withdraw())
-        self.split_win = w
-
-        self.selected = []
-        self.split_count = 2
-
-        # 数ボタン
-        count_frame = tk.Frame(w)
-        count_frame.pack(fill="x", padx=8, pady=(8, 4))
-        tk.Label(count_frame, text="Count:", font=("Segoe UI", 10)).pack(side="left")
-        self.count_buttons = {}
-        for n in [2, 3]:
-            btn = tk.Button(count_frame, text=str(n), width=3,
-                            font=("Segoe UI", 10, "bold"),
-                            command=lambda n=n: self._set_count(n))
-            btn.pack(side="left", padx=2)
-            self.count_buttons[n] = btn
-
-        # 選択済みリスト
-        sel_frame = tk.LabelFrame(w, text="Selected (left to right)", font=("Segoe UI", 9))
-        sel_frame.pack(fill="x", padx=8, pady=4)
-        self.sel_listbox = tk.Listbox(sel_frame, height=3, font=("Segoe UI", 10),
-                                       selectbackground="#ffcccc")
-        self.sel_listbox.pack(fill="x", padx=4, pady=4)
-        self.sel_listbox.bind("<Button-1>", self._on_sel_click)
-
-        # フォルダ一覧（スクロール付き）
-        folder_frame = tk.LabelFrame(w, text="Folders", font=("Segoe UI", 9))
-        folder_frame.pack(fill="both", expand=True, padx=8, pady=4)
-        folder_scroll = tk.Scrollbar(folder_frame)
-        folder_scroll.pack(side="right", fill="y")
-        self.folder_listbox = tk.Listbox(folder_frame, font=("Segoe UI", 10),
-                                          selectbackground="#cce5ff",
-                                          yscrollcommand=folder_scroll.set)
-        self.folder_listbox.pack(fill="both", expand=True, padx=4, pady=4)
-        folder_scroll.config(command=self.folder_listbox.yview)
-        self.folder_listbox.bind("<Button-1>", self._on_folder_click)
-
-        # ボタン
-        btn_frame = tk.Frame(w)
-        btn_frame.pack(fill="x", padx=8, pady=(4, 8))
-        self.launch_btn = tk.Button(btn_frame, text="Launch", font=("Segoe UI", 10, "bold"),
-                                     state="disabled", command=self._launch)
-        self.launch_btn.pack(side="right", padx=4)
-        tk.Button(btn_frame, text="Reset", font=("Segoe UI", 10),
-                  command=self._reset).pack(side="right", padx=4)
-
-        self.launch_btn.config(state="disabled")
-
-        # ウィンドウサイズ・位置（右下寄り）
-        w.update_idletasks()
-        scr_w = w.winfo_screenwidth()
-        scr_h = w.winfo_screenheight()
-        ww, wh = 280, 700
-        taskbar_h = 48
-        w.geometry(f"{ww}x{wh}+{scr_w - ww}+{scr_h - wh - taskbar_h}")
-        w.withdraw()
-
-    def _show_split(self, count):
-        self.root.after(0, lambda: self._show_split_main(count))
-
-    def _show_split_main(self, count):
-        # 既存WT数チェック
-        current_count = len(_find_wt_windows())
-        if current_count + count > MAX_TERMINALS:
-            remaining = MAX_TERMINALS - current_count
-            if remaining <= 0:
-                messagebox.showwarning("Folder Launcher",
-                    f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
-                    f"Close some terminals first.")
-                return
-            else:
-                messagebox.showwarning("Folder Launcher",
-                    f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
-                    f"Can only add {remaining} more.")
-                count = remaining
-
-        self.selected = []
-        self.split_count = count
-        self._highlight_count()
-        self._refresh_folders()
-        self._refresh_sel()
-        self.split_win.deiconify()
-        self.split_win.lift()
 
     def _open_single(self, folder_name):
         """シングル起動: 既存WT数チェック後、1つ起動して再配置"""
@@ -274,72 +181,6 @@ class App:
                 f"Close some terminals first."))
             return
         open_terminals([folder_name])
-
-    def _refresh_folders(self):
-        self.folder_listbox.delete(0, tk.END)
-        for name in get_folders():
-            self.folder_listbox.insert(tk.END, name)
-
-    def _set_count(self, n):
-        self.split_count = n
-        if len(self.selected) > n:
-            self.selected = self.selected[:n]
-        self._highlight_count()
-        self._refresh_sel()
-
-    def _highlight_count(self):
-        for num, btn in self.count_buttons.items():
-            if num == self.split_count:
-                btn.config(bg="#0078D4", fg="white")
-            else:
-                btn.config(bg="SystemButtonFace", fg="black")
-
-    def _refresh_sel(self):
-        self.sel_listbox.delete(0, tk.END)
-        for i in range(self.split_count):
-            if i < len(self.selected):
-                self.sel_listbox.insert(tk.END, f"{i+1}. {self.selected[i]}")
-            else:
-                self.sel_listbox.insert(tk.END, f"{i+1}. ---")
-        if len(self.selected) == self.split_count:
-            self.launch_btn.config(state="normal")
-        else:
-            self.launch_btn.config(state="disabled")
-
-    def _on_folder_click(self, event):
-        self.folder_listbox.after(50, self._add_selected)
-
-    def _add_selected(self):
-        sel = self.folder_listbox.curselection()
-        if not sel:
-            return
-        name = self.folder_listbox.get(sel[0])
-        if len(self.selected) < self.split_count and name not in self.selected:
-            self.selected.append(name)
-            self._refresh_sel()
-
-    def _on_sel_click(self, event):
-        self.sel_listbox.after(50, self._remove_selected)
-
-    def _remove_selected(self):
-        sel = self.sel_listbox.curselection()
-        if not sel:
-            return
-        idx = sel[0]
-        if idx < len(self.selected):
-            self.selected.pop(idx)
-            self._refresh_sel()
-
-    def _reset(self):
-        self.selected = []
-        self._refresh_sel()
-
-    def _launch(self):
-        if self.selected:
-            folders = list(self.selected)
-            self.split_win.withdraw()
-            self.selected = []
-            threading.Thread(target=lambda: open_terminals(folders), daemon=True).start()
 
     def _close_all(self):
         """Close All: 確認2回してから全WT閉じる"""
@@ -365,24 +206,20 @@ class App:
         folders = get_folders()
         items = []
 
-        # Show All（一番上）
-        items.append(pystray.MenuItem("[Show All]", lambda: bring_terminals_to_front()))
+        # OPEN → サブメニューでフォルダ一覧
+        open_items = []
+        for name in folders:
+            open_items.append(pystray.MenuItem(name, self._make_single_callback(name)))
+        items.append(pystray.MenuItem("OPEN", pystray.Menu(*open_items)))
         items.append(pystray.Menu.SEPARATOR)
 
-        # [1 single] → サブメニューでフォルダ一覧
-        single_items = []
-        for name in folders:
-            single_items.append(pystray.MenuItem(name, self._make_single_callback(name)))
-        items.append(pystray.MenuItem("[1 single]", pystray.Menu(*single_items)))
-
-        # [2 split] [3 split] → 選択UI
-        items.append(pystray.MenuItem("[2 split]", lambda: self._show_split(2)))
-        items.append(pystray.MenuItem("[3 split]", lambda: self._show_split(3)))
+        # Show All
+        items.append(pystray.MenuItem("Show All", lambda: bring_terminals_to_front()))
         items.append(pystray.Menu.SEPARATOR)
 
         # Refresh, Close All, Quit
         items.append(pystray.MenuItem("Refresh", lambda: self._rebuild_menu()))
-        items.append(pystray.MenuItem("[Close All]", lambda: self._close_all()))
+        items.append(pystray.MenuItem("Close All", lambda: self._close_all()))
         items.append(pystray.MenuItem("Quit", lambda: self._quit()))
         return pystray.Menu(*items)
 
@@ -395,8 +232,11 @@ class App:
         self.icon.menu = self._build_menu()
 
     def _quit(self):
-        self.icon.stop()
-        self.root.after(0, self.root.destroy)
+        def do_quit():
+            if messagebox.askyesno("Folder Launcher", "Quit Folder Launcher?"):
+                self.icon.stop()
+                self.root.destroy()
+        self.root.after(0, do_quit)
 
     def run(self):
         self.root.mainloop()
