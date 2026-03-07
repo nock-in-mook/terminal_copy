@@ -5,15 +5,30 @@
 # - 最大3ウィンドウ制限、Show All、Close All
 
 import os
+import sys
 import subprocess
 import threading
 import ctypes
 import ctypes.wintypes
 import time
+
+# Tcl/Tkライブラリのパス設定（即ランチャー.exeから起動時に必要）
+for _d in [os.path.dirname(sys.executable)] + sys.path:
+    _tcl_dir = os.path.join(_d, "tcl")
+    if os.path.isdir(os.path.join(_tcl_dir, "tcl8.6")):
+        os.environ.setdefault("TCL_LIBRARY", os.path.join(_tcl_dir, "tcl8.6"))
+        os.environ.setdefault("TK_LIBRARY", os.path.join(_tcl_dir, "tk8.6"))
+        break
+
 import tkinter as tk
 from tkinter import messagebox
 import pystray
 from PIL import Image, ImageDraw
+
+# 多重起動防止（Windows Mutex）
+_mutex = ctypes.windll.kernel32.CreateMutexW(None, True, "SokuLauncher_Mutex")
+if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    sys.exit(0)
 
 # タスクトレイ等でのアプリ名を「即ランチャー」にする（pythonw.exe表示を防ぐ）
 APP_ID = "SokuLauncher.即ランチャー"
