@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 # folder_launcher.py
 # Mac版フォルダランチャー：メニューバー常駐
-# - [1 single] サブメニューからフォルダ選択 → 即起動
-# - [2 split] [3 split] → サブメニューで順番に選択 → 自動起動
-# - 最大3ウィンドウ制限、Show All、Close All
-# - 左寄せ配置（Dockが左にあるため）
+# - [OPEN] サブメニューからフォルダ選択 → ターミナル起動
+# - 最大4ウィンドウ、左寄せ配置（Dock幅分マージン）
 
 import os
 import subprocess
 import time
 import rumps
+from AppKit import NSScreen
+
+import logging
+logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
+                    format='%(asctime)s %(message)s')
 
 # 監視対象の親ディレクトリ
 APPS_DIR = os.path.expanduser("~/Library/CloudStorage/Dropbox/_Apps2026")
 
-# 画面の何%をターミナルに使うか（左寄せ）
-SCREEN_USE_RATIO = 0.95
+# ウィンドウ幅（画面幅に対する割合）
+WIN_WIDTH_RATIO = 0.20
 # 上下マージン（画面高さに対する割合）
 MARGIN_TOP_RATIO = 0.10
 MARGIN_BOTTOM_RATIO = 0.10
 # 最大ウィンドウ数
-MAX_TERMINALS = 3
+MAX_TERMINALS = 4
 
 
 def get_folders():
@@ -42,13 +45,14 @@ def _run_applescript(script):
     return result.stdout.strip()
 
 
-def _get_screen_size():
-    """画面サイズを取得（メニューバー・Dock考慮なしの全体サイズ）"""
-    script = 'tell application "Finder" to get bounds of window of desktop'
-    result = _run_applescript(script)
-    # "0, 0, 1920, 1080" の形式
-    parts = [int(x.strip()) for x in result.split(',')]
-    return parts[2], parts[3]  # width, height
+def _get_screen_info():
+    """画面サイズとDockマージンを取得（AppKit使用）"""
+    screen = NSScreen.mainScreen()
+    full = screen.frame()
+    visible = screen.visibleFrame()
+    dock_margin = int(visible.origin.x)
+    menubar_h = int(full.size.height - visible.size.height - visible.origin.y)
+    return int(full.size.width), int(full.size.height), dock_margin, menubar_h
 
 
 def _get_terminal_window_count():
@@ -69,27 +73,20 @@ end tell'''
 
 
 def _reposition_windows():
-    """全Terminal.appウィンドウを左寄せで再配置"""
-    sw, sh = _get_screen_size()
+    """全Terminal.appウィンドウを左寄せで再配置（Dock幅分のマージンあり）"""
+    sw, sh, dock_margin, menubar_h = _get_screen_info()
     win_count = _get_terminal_window_count()
     if win_count == 0:
         return
 
     win_count = min(win_count, MAX_TERMINALS)
 
-    # 配置計算（幅は常にMAX_TERMINALS分割時と同じ固定幅）
-    total_w = int(sw * SCREEN_USE_RATIO)
-    win_w = total_w // MAX_TERMINALS
+    win_w = int(sw * WIN_WIDTH_RATIO)
     margin_top = int(sh * MARGIN_TOP_RATIO)
     win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
 
-    # 左寄せで配置（ウィンドウ番号は新しい順=逆順に並んでいるので注意）
     for i in range(win_count):
-        x = i * win_w
-        # AppleScriptのboundsは {左, 上, 右, 下}
-        # ウィンドウiは左からi番目に配置
-        # Terminal.appのwindow indexは1始まり、新しい順
-        # 左から並べるために逆順でアクセス
+        x = dock_margin + i * win_w
         win_idx = win_count - i
         script = f'''
 tell application "Terminal"
@@ -100,93 +97,48 @@ end tell'''
         _run_applescript(script)
 
 
-def open_terminals(folder_names):
-    """Terminal.appウィンドウを起動し、全ターミナルを左寄せで再配置"""
-    if not folder_names:
-        return
-
-    for name in folder_names:
-        full_path = os.path.join(APPS_DIR, name)
-        # Terminal.appで新しいウィンドウを開き、cdしてclaude起動
-        # CLAUDECODE環境変数をクリアしてネスト防止
-        script = f'''
+def open_terminal(folder_name):
+    """Terminal.appウィンドウを1つ起動し、全ターミナルを再配置"""
+    full_path = os.path.join(APPS_DIR, folder_name)
+    script = f'''
 tell application "Terminal"
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{name}\\\\007\\" && claude --dangerously-skip-permissions"
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{folder_name}\\\\007\\" && claude --dangerously-skip-permissions"
     activate
 end tell'''
-        _run_applescript(script)
-        time.sleep(0.5)
-
-    # ウィンドウが出揃うのを少し待つ
-    time.sleep(1.0)
+    _run_applescript(script)
+    time.sleep(1.5)
     _reposition_windows()
 
 
 def bring_terminals_to_front():
     """全Terminal.appウィンドウを最前面に出す"""
-    script = '''
-tell application "Terminal"
-    activate
-end tell'''
-    _run_applescript(script)
+    _run_applescript('tell application "Terminal" to activate')
 
 
 def close_all_terminals():
     """全Terminal.appウィンドウを閉じる"""
-    script = '''
-tell application "Terminal"
-    close every window
-end tell'''
-    _run_applescript(script)
+    _run_applescript('tell application "Terminal" to close every window')
 
 
 class FolderLauncher(rumps.App):
     def __init__(self):
         super().__init__("📂", quit_button=None)
-        # split選択の状態管理
-        self._selecting_count = 0  # 0=選択中でない, 2or3=選択中
-        self._selected = []
         self.menu = self._build_menu()
 
     def _build_menu(self):
         folders = get_folders()
         items = []
 
-        # [1 single] → サブメニューでフォルダ一覧
-        single_menu = rumps.MenuItem("[1 single]")
+        # [OPEN] → サブメニューでフォルダ一覧
+        open_menu = rumps.MenuItem("[OPEN]")
         for name in folders:
-            item = rumps.MenuItem(name, callback=self._on_single_click)
-            single_menu.add(item)
-        items.append(single_menu)
-
-        # [2 split] / [3 split]
-        if self._selecting_count > 0:
-            # 選択中: 現在の状態を表示
-            progress = f"[{self._selecting_count} split] ({len(self._selected)}/{self._selecting_count})"
-            split_menu = rumps.MenuItem(progress)
-            for name in folders:
-                if name in self._selected:
-                    # 選択済みは番号付きで表示
-                    idx = self._selected.index(name) + 1
-                    item = rumps.MenuItem(f"✓ {idx}. {name}")
-                    split_menu.add(item)
-                else:
-                    item = rumps.MenuItem(name, callback=self._on_split_click)
-                    split_menu.add(item)
-            # キャンセルボタン
-            split_menu.add(rumps.separator)
-            split_menu.add(rumps.MenuItem("Cancel", callback=self._cancel_split))
-            items.append(split_menu)
-        else:
-            items.append(rumps.MenuItem("[2 split]", callback=self._start_split_2))
-            items.append(rumps.MenuItem("[3 split]", callback=self._start_split_3))
+            item = rumps.MenuItem(name, callback=self._on_open_click)
+            open_menu.add(item)
+        items.append(open_menu)
 
         items.append(rumps.separator)
-        # Show All
         items.append(rumps.MenuItem("[Show All]", callback=self._show_all))
         items.append(rumps.separator)
-
-        # Refresh, Close All, Quit
         items.append(rumps.MenuItem("Refresh", callback=self._refresh))
         items.append(rumps.MenuItem("[Close All]", callback=self._close_all))
         items.append(rumps.MenuItem("Quit", callback=self._quit))
@@ -202,62 +154,13 @@ class FolderLauncher(rumps.App):
     def _show_all(self, _):
         bring_terminals_to_front()
 
-    def _on_single_click(self, sender):
-        """シングル起動"""
+    def _on_open_click(self, sender):
+        """フォルダを選んでターミナル起動"""
         current = _get_terminal_window_count()
         if current >= MAX_TERMINALS:
             rumps.alert(f"{current}個のターミナルが開いています（最大{MAX_TERMINALS}）。\n先に閉じてください。")
             return
-        open_terminals([sender.title])
-
-    def _start_split_2(self, _):
-        self._start_split(2)
-
-    def _start_split_3(self, _):
-        self._start_split(3)
-
-    def _start_split(self, count):
-        """split選択を開始"""
-        current = _get_terminal_window_count()
-        if current + count > MAX_TERMINALS:
-            remaining = MAX_TERMINALS - current
-            if remaining <= 0:
-                rumps.alert(f"{current}個のターミナルが開いています（最大{MAX_TERMINALS}）。\n先に閉じてください。")
-                return
-            rumps.alert(f"{current}個のターミナルが開いています（最大{MAX_TERMINALS}）。\nあと{remaining}個しか追加できません。")
-            count = remaining
-
-        self._selecting_count = count
-        self._selected = []
-        self._rebuild_menu()
-        rumps.notification("Folder Launcher", "", f"フォルダを{count}個選んでください")
-
-    def _on_split_click(self, sender):
-        """split選択中にフォルダをクリック"""
-        name = sender.title
-        if name in self._selected:
-            return
-
-        self._selected.append(name)
-
-        if len(self._selected) >= self._selecting_count:
-            # 選択完了 → 起動
-            folders = list(self._selected)
-            self._selecting_count = 0
-            self._selected = []
-            self._rebuild_menu()
-            open_terminals(folders)
-        else:
-            # まだ選択中 → メニュー更新
-            self._rebuild_menu()
-            remaining = self._selecting_count - len(self._selected)
-            rumps.notification("Folder Launcher", "", f"あと{remaining}個選んでください")
-
-    def _cancel_split(self, _):
-        """split選択をキャンセル"""
-        self._selecting_count = 0
-        self._selected = []
-        self._rebuild_menu()
+        open_terminal(sender.title)
 
     def _refresh(self, _):
         """フォルダ一覧を再読み込み"""
@@ -270,15 +173,10 @@ class FolderLauncher(rumps.App):
         if count == 0:
             rumps.alert("開いているターミナルはありません。")
             return
-        r1 = rumps.alert(f"{count}個のターミナルを全て閉じますか？",
-                         ok="閉じる", cancel="キャンセル")
-        if r1 != 1:
-            return
-        r2 = rumps.alert("本当に閉じますか？保存していない作業は失われます。",
-                         ok="閉じる", cancel="キャンセル")
-        if r2 != 1:
-            return
-        close_all_terminals()
+        r = rumps.alert(f"{count}個のターミナルを全て閉じますか？\n保存していない作業は失われます。",
+                        ok="閉じる", cancel="キャンセル")
+        if r == 1:
+            close_all_terminals()
 
     def _quit(self, _):
         rumps.quit_application()
