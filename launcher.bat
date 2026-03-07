@@ -67,3 +67,6 @@ if not exist "%STARTMENU%" (
 :: Launch
 echo Starting...
 start "" "%LAUNCHER_EXE%" "%SCRIPT%"
+echo.
+echo Done. Press any key to close.
+pause >nul
