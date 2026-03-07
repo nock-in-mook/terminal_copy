@@ -43,6 +43,7 @@ if exist "%WT_SETTINGS%" (
 :: Shortcuts
 set "LAUNCHER_EXE=%~dp0即ランチャー.exe"
 set "SCRIPT=%~dp0folder_launcher_win.pyw"
+set "ICO=%~dp0app.ico"
 set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\即ランチャー.lnk"
 set "STARTMENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\即ランチャー.lnk"
 
@@ -51,11 +52,11 @@ if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Folder Launche
 if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk" del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk"
 
 if not exist "%STARTUP%" (
-    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTUP%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.Save()"
+    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTUP%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%ICO%,0';$s.Save()"
     echo Startup shortcut created
 )
 if not exist "%STARTMENU%" (
-    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTMENU%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.Save()"
+    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTMENU%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%ICO%,0';$s.Save()"
     echo Start Menu shortcut created
 )
 
