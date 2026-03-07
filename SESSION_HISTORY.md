@@ -5519,3 +5519,10 @@ aaa
 ## terminal_copy_005_フォント設定 (2026-03-07)
 - WTフォントをUDEV Gothicに変更（日本語文字間スキマ解消）
 - /end スキル・CLAUDE.mdのリネーム処理を全自動化
+
+---
+## terminal_copy_005_フォント・全許可設定 (2026-03-07)
+- WTフォントをUDEV Gothicに変更
+- /end スキル・CLAUDE.mdのリネーム処理を全自動化
+- claude起動に--dangerously-skip-permissions追加
+- settings.local.json全許可に整理

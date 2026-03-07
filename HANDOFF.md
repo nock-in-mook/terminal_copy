@@ -149,5 +149,7 @@ Quit
 - get_folders()にimages・textフォルダの除外フィルタを追加
 - WTフォントをUDEV Gothicに変更（日本語の文字間スキマ解消）
 - /end スキルとCLAUDE.mdのセッション名リネームを確認不要・全自動に変更
+- claude起動に --dangerously-skip-permissions を追加
+- settings.local.json を全許可に整理（グローバルも既に * で全許可済み）
 - 次: Mac版フォルダランチャーの改良（上記参照）
 - 次: launcher.batにUDEV Gothicフォント自動インストール処理を追加するとベター
