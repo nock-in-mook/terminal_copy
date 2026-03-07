@@ -2,29 +2,31 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- Windows版フォルダランチャー（folder_launcher_win.pyw）完成・動作確認済み
-- Mac版フォルダランチャー（folder_launcher.py）大幅簡素化・動作確認済み
+- アプリ名を「即ランチャー」に統一済み
+- Windows版（folder_launcher_win.pyw）: メニュー簡素化・アイコン統一完了
+- Mac版（folder_launcher.py）: 前回セッションで簡素化済み
 
-## Mac版の変更点（今セッション）
-- AppKitでDock幅を動的取得し、左マージンに反映
-- ウィンドウ幅を画面幅の20%（1/5）に変更
-- split系メニュー（2/3/4 split）を廃止し、[OPEN]サブメニュー一本に簡素化
-- MAX_TERMINALS を4に変更
-- フォルダ大量時（44個テスト済み）もスクロールで問題なし
-- close_allの確認ダイアログを1回に簡素化
+## Windows版の構成
+- `folder_launcher_win.pyw` — メイン（pystray + tkinter）
+- `即ランチャー.exe` — pythonw.exeコピー+アイコン・バージョン情報書き換え済み
+- `app.ico` — アイコン（トレイ・exe・ショートカット共通）
+- `python3.dll` / `python314.dll` / `python314._pth` — exe用ランタイム
+- `launcher.bat` — 1クリックセットアップ（exe生成・WT設定・ショートカット全自動）
+- `_build_exe.py` — exe生成スクリプト（rceditダウンロード→アイコン・名前書き換え）
+- `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
+
+## 右クリックメニュー構成（Windows版）
+- OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
+- ---
+- Show All
+- ---
+- Refresh / Close All / Quit（確認ダイアログ付き）
 
 ## Mac環境設定
-- タイトルバーダブルクリック → 「何もしない」に変更済み（AppleActionOnDoubleClick=None）
+- タイトルバーダブルクリック → 「何もしない」（AppleActionOnDoubleClick=None）
 - osascriptのキー操作送信は権限なし（アクセシビリティ未許可）
 
-## Windows版の機能（folder_launcher_win.pyw）
-- pystray + tkinter、トレイアイコン常駐
-- WT最大3ウィンドウ、画面幅95%を3分割固定幅、右寄せ配置
-- 影の重なり補正 SHADOW_OVERLAP=14px
-- 一発セットアップ（launcher.bat）
-- フォント: UDEV Gothic
-
 ## 次のアクション
-- デバッグログ（logging）を本番では削除 or 無効化を検討
-- launcher.batにUDEV Gothicフォント自動インストール処理を追加するとベター
+- UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
 - Terminal.appフルスクリーン問題: Ctrl+Command+F で手動解除が必要
+- Mac版も「即ランチャー」名称に合わせるか検討
