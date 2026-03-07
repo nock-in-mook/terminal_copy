@@ -12,8 +12,14 @@
 - `app.ico` — アイコン（トレイ・exe・ショートカット共通）
 - `python3.dll` / `python314.dll` / `python314._pth` — exe用ランタイム
 - `launcher.bat` — 1クリックセットアップ（exe生成・WT設定・ショートカット全自動）
-- `_build_exe.py` — exe生成スクリプト（rceditダウンロード→アイコン・名前書き換え）
+- `_build_exe.py` — exe生成スクリプト（Win32 UpdateResourceW APIでバージョン情報書き換え）
 - `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
+
+## 今回の変更
+- rceditは日本語文字列を正しく扱えない問題を発見
+- _build_exe.pyをWin32 UpdateResourceW API方式に書き換え
+- 通知領域設定で「即ランチャー」と正しく表示されるようになった
+- 古い「Python」のレジストリエントリも削除済み
 
 ## 右クリックメニュー構成（Windows版）
 - OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
@@ -22,9 +28,8 @@
 - ---
 - Refresh / Close All / Quit（確認ダイアログ付き）
 
-## Mac環境設定
-- タイトルバーダブルクリック → 「何もしない」（AppleActionOnDoubleClick=None）
-- osascriptのキー操作送信は権限なし（アクセシビリティ未許可）
+## 多重起動防止
+- Windows Mutex（SokuLauncher_Mutex）で実装済み
 
 ## 次のアクション
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
