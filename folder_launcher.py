@@ -137,7 +137,8 @@ end tell'''
 
 
 def bring_terminals_to_front():
-    """全Terminal.appウィンドウを最前面に出す"""
+    """全Terminal.appウィンドウを再配置して最前面に出す"""
+    _reposition_windows()
     _run_applescript('tell application "Terminal" to activate')
 
 
