@@ -33,37 +33,21 @@ def _normalize(s):
 
 
 def get_folders():
-    """フォルダ一覧を取得（others内も含む）"""
+    """フォルダ一覧を取得"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
         exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
         folders = [e for e in entries
                    if not e.startswith('.') and _normalize(e) not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # others（旧_other_projects）内のサブフォルダも追加
-        for other_name in ['others', '_other_projects']:
-            other_dir = os.path.join(APPS_DIR, other_name)
-            if os.path.isdir(other_dir):
-                for e in sorted(os.listdir(other_dir), key=str.lower):
-                    if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
-                        folders.append(e)
-                break
-        folders.sort(key=str.lower)
         return folders
     except OSError:
         return []
 
 
 def resolve_folder_path(name):
-    """フォルダ名からフルパスを解決（others内も探す）"""
-    direct = os.path.join(APPS_DIR, name)
-    if os.path.isdir(direct):
-        return direct
-    for other_name in ['others', '_other_projects']:
-        other = os.path.join(APPS_DIR, other_name, name)
-        if os.path.isdir(other):
-            return other
-    return direct
+    """フォルダ名からフルパスを解決"""
+    return os.path.join(APPS_DIR, name)
 
 
 def _run_applescript(script):
