@@ -55,15 +55,14 @@ set "STARTMENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\即ランチャ�
 if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Folder Launcher.lnk" del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Folder Launcher.lnk"
 if exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk" del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Folder Launcher.lnk"
 
-if not exist "%STARTUP%" (
-    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTUP%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%ICO%,0';$s.Save()"
-    echo Startup shortcut created
-)
-if not exist "%STARTMENU%" (
-    powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTMENU%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%ICO%,0';$s.Save()"
-    echo Start Menu shortcut created
-)
+powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTUP%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%ICO%,0';$s.Save()"
+echo Startup shortcut updated
+powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%STARTMENU%');$s.TargetPath='%LAUNCHER_EXE%';$s.Arguments='%SCRIPT%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%ICO%,0';$s.Save()"
+echo Start Menu shortcut updated
 
 :: Launch
 echo Starting...
 start "" "%LAUNCHER_EXE%" "%SCRIPT%"
+echo.
+echo Done. Press any key to close.
+pause >nul
