@@ -37,9 +37,9 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
 # DPIスケーリング: 呼ばない方がMoveWindowの論理座標でWTを狭くできる
 
 # 監視対象の親ディレクトリ
-APPS_DIR = os.path.join(os.environ.get("USERPROFILE", ""), "Dropbox", "_Apps2026")
+APPS_DIR = os.path.join(os.environ.get("USERPROFILE", ""), "Google ドライブ", "_Apps2026")
 if not os.path.isdir(APPS_DIR):
-    APPS_DIR = r"D:\Dropbox\_Apps2026"
+    APPS_DIR = r"G:\マイドライブ\_Apps2026"
 
 # 画面の何%をターミナルに使うか（右寄せ。残りが左端のアイコン用余白）
 SCREEN_USE_RATIO = 0.95

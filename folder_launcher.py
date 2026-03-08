@@ -15,7 +15,7 @@ logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
                     format='%(asctime)s %(message)s')
 
 # 監視対象の親ディレクトリ
-APPS_DIR = os.path.expanduser("~/Library/CloudStorage/Dropbox/_Apps2026")
+APPS_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026")
 
 # ウィンドウ幅（画面幅に対する割合）
 WIN_WIDTH_RATIO = 0.20
