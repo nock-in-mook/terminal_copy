@@ -7,6 +7,7 @@
 import os
 import subprocess
 import time
+import unicodedata
 import rumps
 from AppKit import NSScreen
 
@@ -26,34 +27,42 @@ MARGIN_BOTTOM_RATIO = 0.10
 MAX_TERMINALS = 4
 
 
+def _normalize(s):
+    """macOSのNFDファイル名をNFCに正規化"""
+    return unicodedata.normalize('NFC', s)
+
+
 def get_folders():
-    """フォルダ一覧を取得（_other_projects内も含む）"""
+    """フォルダ一覧を取得（others内も含む）"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
-        exclude = {'images', 'text', 'テレパシーワード', '_other_projects'}
+        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
         folders = [e for e in entries
-                   if not e.startswith('.') and e not in exclude
+                   if not e.startswith('.') and _normalize(e) not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # _other_projects内のサブフォルダも追加
-        other_dir = os.path.join(APPS_DIR, '_other_projects')
-        if os.path.isdir(other_dir):
-            for e in sorted(os.listdir(other_dir), key=str.lower):
-                if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
-                    folders.append(e)
-            folders.sort(key=str.lower)
+        # others（旧_other_projects）内のサブフォルダも追加
+        for other_name in ['others', '_other_projects']:
+            other_dir = os.path.join(APPS_DIR, other_name)
+            if os.path.isdir(other_dir):
+                for e in sorted(os.listdir(other_dir), key=str.lower):
+                    if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
+                        folders.append(e)
+                break
+        folders.sort(key=str.lower)
         return folders
     except OSError:
         return []
 
 
 def resolve_folder_path(name):
-    """フォルダ名からフルパスを解決（_other_projects内も探す）"""
+    """フォルダ名からフルパスを解決（others内も探す）"""
     direct = os.path.join(APPS_DIR, name)
     if os.path.isdir(direct):
         return direct
-    other = os.path.join(APPS_DIR, '_other_projects', name)
-    if os.path.isdir(other):
-        return other
+    for other_name in ['others', '_other_projects']:
+        other = os.path.join(APPS_DIR, other_name, name)
+        if os.path.isdir(other):
+            return other
     return direct
 
 
