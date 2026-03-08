@@ -44,7 +44,7 @@ if not os.path.isdir(APPS_DIR):
 # 画面の何%をターミナルに使うか（右寄せ。残りが左端のアイコン用余白）
 SCREEN_USE_RATIO = 0.95
 # 上下マージン（画面高さに対する割合）
-MARGIN_TOP_RATIO = 0.10
+MARGIN_TOP_RATIO = 0.0
 MARGIN_BOTTOM_RATIO = 0.10
 # ウィンドウ影の重なり補正（論理ピクセル）
 SHADOW_OVERLAP = 14
