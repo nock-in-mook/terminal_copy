@@ -6420,3 +6420,15 @@ session
   - others除外追加
   - マイドライブ直下_other-projects内フォルダも表示対象に追加
 - 古いDropbox版ランチャープロセスを停止→Googleドライブ版で再起動
+
+---
+## 即ランチャー_010_Mac版Gドライブ移行対応 (2026-03-09)
+
+- setup_mac.sh実行確認（シンボリックリンク全てGoogleドライブ向き確認済み）
+- Mac版folder_launcher.py修正:
+  - macOS Unicode NFD正規化でテレパシーワード除外を修正
+  - others除外追加
+  - マイドライブ直下_other-projects内フォルダも表示対象に追加
+  - Show Allで再配置＋最前面表示するように変更
+- 古いDropbox版ランチャープロセスを停止→Googleドライブ版で再起動
+- グローバルCLAUDE.mdのセッション終了処理にgitコミット＆プッシュを追加
