@@ -16,7 +16,9 @@ logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
                     format='%(asctime)s %(message)s')
 
 # 監視対象の親ディレクトリ
-APPS_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026")
+GDRIVE_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ")
+APPS_DIR = os.path.join(GDRIVE_DIR, "_Apps2026")
+OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
 
 # ウィンドウ幅（画面幅に対する割合）
 WIN_WIDTH_RATIO = 0.20
@@ -33,21 +35,33 @@ def _normalize(s):
 
 
 def get_folders():
-    """フォルダ一覧を取得"""
+    """フォルダ一覧を取得（_other-projects内も含む）"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
         exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
         folders = [e for e in entries
                    if not e.startswith('.') and _normalize(e) not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
+        # マイドライブ直下の_other-projects内のサブフォルダも追加
+        if os.path.isdir(OTHER_PROJECTS_DIR):
+            for e in sorted(os.listdir(OTHER_PROJECTS_DIR), key=str.lower):
+                if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
+                    folders.append(e)
+        folders.sort(key=str.lower)
         return folders
     except OSError:
         return []
 
 
 def resolve_folder_path(name):
-    """フォルダ名からフルパスを解決"""
-    return os.path.join(APPS_DIR, name)
+    """フォルダ名からフルパスを解決（_other-projects内も探す）"""
+    direct = os.path.join(APPS_DIR, name)
+    if os.path.isdir(direct):
+        return direct
+    other = os.path.join(OTHER_PROJECTS_DIR, name)
+    if os.path.isdir(other):
+        return other
+    return direct
 
 
 def _run_applescript(script):
