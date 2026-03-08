@@ -282,4 +282,8 @@ class App:
 
 
 if __name__ == "__main__":
+    # --show-all モード: 全ターミナルを再配置＋最前面に出して終了
+    if "--show-all" in sys.argv:
+        bring_terminals_to_front()
+        sys.exit(0)
     App().run()
