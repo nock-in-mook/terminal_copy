@@ -150,7 +150,8 @@ def _find_wt_windows():
 
 
 def bring_terminals_to_front():
-    """全WTウィンドウを最前面に出す"""
+    """全WTウィンドウを再配置して最前面に出す"""
+    _reposition_windows()
     user32 = ctypes.windll.user32
     hwnds = _find_wt_windows()
     for hwnd in reversed(hwnds):
