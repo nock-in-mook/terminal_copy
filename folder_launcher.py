@@ -5,6 +5,7 @@
 # - 最大4ウィンドウ、左寄せ配置（Dock幅分マージン）
 
 import os
+import sys
 import subprocess
 import time
 import unicodedata
@@ -27,6 +28,8 @@ MARGIN_TOP_RATIO = 0.10
 MARGIN_BOTTOM_RATIO = 0.10
 # 最大ウィンドウ数
 MAX_TERMINALS = 4
+# tty → フォルダ名のマッピング（タイトル維持用）
+_tty_titles = {}
 
 
 def _normalize(s):
@@ -126,22 +129,37 @@ end tell'''
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、全ターミナルを再配置"""
     full_path = resolve_folder_path(folder_name)
+    # 起動してttyを取得し、タイトルマッピングに登録
     script = f'''
 tell application "Terminal"
     do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
-    tell tab 1 of front window
-        set custom title to "{folder_name}"
-        set title displays custom title to true
-        set title displays device name to false
-        set title displays shell path to false
-        set title displays window size to false
-        set title displays file name to false
-    end tell
+    set ttyPath to tty of tab 1 of front window
     activate
+    return ttyPath
 end tell'''
-    _run_applescript(script)
+    tty = _run_applescript(script)
+    if tty:
+        _tty_titles[tty] = folder_name
     time.sleep(1.5)
     _reposition_windows()
+
+
+def _refresh_titles():
+    """全ターミナルのタイトルをフォルダ名で上書き"""
+    if not _tty_titles:
+        return
+    for tty, title in list(_tty_titles.items()):
+        script = f'''
+tell application "Terminal"
+    repeat with w in windows
+        repeat with t in tabs of w
+            if tty of t is "{tty}" then
+                set custom title of t to "{title}"
+            end if
+        end repeat
+    end repeat
+end tell'''
+        _run_applescript(script)
 
 
 def bring_terminals_to_front():
@@ -159,6 +177,11 @@ class FolderLauncher(rumps.App):
     def __init__(self):
         super().__init__("📂", quit_button=None)
         self.menu = self._build_menu()
+
+    @rumps.timer(3)
+    def _title_keeper(self, _):
+        """3秒ごとにターミナルタイトルをフォルダ名に上書き"""
+        _refresh_titles()
 
     def _build_menu(self):
         folders = get_folders()
