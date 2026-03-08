@@ -34,6 +34,10 @@
 - Windows: Mutex（SokuLauncher_Mutex）
 - Mac: なし（rumpsの制約）
 
+## 最新の変更（セッション012）
+- ウィンドウ配置のmargin_topをメニューバー高さに変更（メニューバー直下にくっつく）
+- ウィンドウの高さ・幅・左右位置は従来通り
+
 ## 次のアクション
 - Windows版の`folder_launcher_win.pyw`にも`_other-projects`対応を追加（現在は`_other_projects`を参照）
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
