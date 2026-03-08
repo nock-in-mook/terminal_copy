@@ -3,8 +3,7 @@
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - アプリ名を「即ランチャー」に統一済み
-- Windows版（folder_launcher_win.pyw）: メニュー簡素化・アイコン統一完了
-- Mac版（folder_launcher.py）: 簡素化済み
+- DropboxからGoogleドライブへの移行対応完了
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter）
@@ -15,10 +14,13 @@
 - `_build_exe.py` — exe生成スクリプト（Win32 UpdateResourceW APIでバージョン情報書き換え）
 - `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
 
-## 今回の変更（Show All再配置追加）
-- Show Allメニューに `_reposition_windows()` を追加
-- 前面に出す前に再配置するようになった
-- 前回の上端配置（MARGIN_TOP_RATIO=0.0）が Show All でも反映される
+## 今回の変更（Googleドライブ移行対応）
+- APPS_DIRをDropbox→Googleドライブのパスに変更（Win/Mac両方）
+- `_other_projects` フォルダ内のサブフォルダもメニューに表示されるように対応
+- `resolve_folder_path()` でフォルダ名→実パスを自動解決
+- `テレパシーワード` を除外リストに追加
+- ショートカット（スタートメニュー・スタートアップ）をGoogleドライブのパスに更新
+- `launcher.bat` のショートカット作成を毎回上書き方式に変更
 
 ## 右クリックメニュー構成（Windows版）
 - OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
@@ -30,6 +32,13 @@
 ## 多重起動防止
 - Windows Mutex（SokuLauncher_Mutex）で実装済み
 
+## 旧Dropbox残骸の状況
+調査済み。以下が旧パスを参照したまま残っている（未修正）：
+- スタートアップ/スタートメニュー: 即シェア君.lnk, 透明キーボード.lnk
+- タスクバーピン留め: 透明キーボード.lnk
+- デスクトップ: Dropbox.lnk, experiment.lnk, stock_data.lnk, 透明キーボード.lnk
+- レジストリ: スタートメニュータイルキャッシュ（放置OK）
+
 ## 次のアクション
+- 他プロジェクト（Data_Share, 透明キーボード等）のDropbox→Googleドライブ移行対応
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
-- Mac版も「即ランチャー」名称に合わせるか検討
