@@ -4,7 +4,7 @@
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - アプリ名を「即ランチャー」に統一済み
 - Windows版（folder_launcher_win.pyw）: メニュー簡素化・アイコン統一完了
-- Mac版（folder_launcher.py）: 前回セッションで簡素化済み
+- Mac版（folder_launcher.py）: 簡素化済み
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter）
@@ -15,11 +15,10 @@
 - `_build_exe.py` — exe生成スクリプト（Win32 UpdateResourceW APIでバージョン情報書き換え）
 - `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
 
-## 今回の変更
-- rceditは日本語文字列を正しく扱えない問題を発見
-- _build_exe.pyをWin32 UpdateResourceW API方式に書き換え
-- 通知領域設定で「即ランチャー」と正しく表示されるようになった
-- 古い「Python」のレジストリエントリも削除済み
+## 今回の変更（ターミナル上端配置）
+- MARGIN_TOP_RATIO を 0.10 → 0.0 に変更
+- ターミナルが画面上端にぴったり張り付くようになった
+- サイズは変わらず、下の隙間が広がるだけ
 
 ## 右クリックメニュー構成（Windows版）
 - OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
@@ -33,5 +32,4 @@
 
 ## 次のアクション
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
-- Terminal.appフルスクリーン問題: Ctrl+Command+F で手動解除が必要
 - Mac版も「即ランチャー」名称に合わせるか検討
