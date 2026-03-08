@@ -111,8 +111,8 @@ def _reposition_windows():
     win_count = min(win_count, MAX_TERMINALS)
 
     win_w = int(sw * WIN_WIDTH_RATIO)
-    margin_top = int(sh * MARGIN_TOP_RATIO)
-    win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
+    margin_top = menubar_h  # メニューバー直下にくっつける
+    win_h = sh - int(sh * (MARGIN_TOP_RATIO + MARGIN_BOTTOM_RATIO))  # 高さは従来と同じ
 
     for i in range(win_count):
         x = dock_margin + i * win_w
