@@ -128,7 +128,15 @@ def open_terminal(folder_name):
     full_path = resolve_folder_path(folder_name)
     script = f'''
 tell application "Terminal"
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{folder_name}\\\\007\\" && claude --dangerously-skip-permissions"
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
+    tell tab 1 of front window
+        set custom title to "{folder_name}"
+        set title displays custom title to true
+        set title displays device name to false
+        set title displays shell path to false
+        set title displays window size to false
+        set title displays file name to false
+    end tell
     activate
 end tell'''
     _run_applescript(script)
@@ -210,4 +218,8 @@ class FolderLauncher(rumps.App):
 
 
 if __name__ == "__main__":
+    # --show-all: 全ターミナルを最前面に出して終了（透明キーボード等から呼ばれる）
+    if "--show-all" in sys.argv:
+        bring_terminals_to_front()
+        sys.exit(0)
     FolderLauncher().run()
