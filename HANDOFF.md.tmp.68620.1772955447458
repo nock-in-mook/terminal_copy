@@ -15,15 +15,15 @@
 - `_build_exe.py` — exe生成スクリプト（Win32 UpdateResourceW APIでバージョン情報書き換え）
 - `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
 
-## 今回の変更（Show All再配置追加）
-- Show Allメニューに `_reposition_windows()` を追加
-- 前面に出す前に再配置するようになった
-- 前回の上端配置（MARGIN_TOP_RATIO=0.0）が Show All でも反映される
+## 今回の変更（ターミナル上端配置）
+- MARGIN_TOP_RATIO を 0.10 → 0.0 に変更
+- ターミナルが画面上端にぴったり張り付くようになった
+- サイズは変わらず、下の隙間が広がるだけ
 
 ## 右クリックメニュー構成（Windows版）
 - OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
 - ---
-- Show All（再配置＋前面表示）
+- Show All
 - ---
 - Refresh / Close All / Quit（確認ダイアログ付き）
 
