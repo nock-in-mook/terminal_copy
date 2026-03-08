@@ -27,15 +27,34 @@ MAX_TERMINALS = 4
 
 
 def get_folders():
-    """フォルダ一覧を取得"""
+    """フォルダ一覧を取得（_other_projects内も含む）"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
-        exclude = {'images', 'text'}
-        return [e for e in entries
-                if not e.startswith('.') and e not in exclude
-                and os.path.isdir(os.path.join(APPS_DIR, e))]
+        exclude = {'images', 'text', 'テレパシーワード', '_other_projects'}
+        folders = [e for e in entries
+                   if not e.startswith('.') and e not in exclude
+                   and os.path.isdir(os.path.join(APPS_DIR, e))]
+        # _other_projects内のサブフォルダも追加
+        other_dir = os.path.join(APPS_DIR, '_other_projects')
+        if os.path.isdir(other_dir):
+            for e in sorted(os.listdir(other_dir), key=str.lower):
+                if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
+                    folders.append(e)
+            folders.sort(key=str.lower)
+        return folders
     except OSError:
         return []
+
+
+def resolve_folder_path(name):
+    """フォルダ名からフルパスを解決（_other_projects内も探す）"""
+    direct = os.path.join(APPS_DIR, name)
+    if os.path.isdir(direct):
+        return direct
+    other = os.path.join(APPS_DIR, '_other_projects', name)
+    if os.path.isdir(other):
+        return other
+    return direct
 
 
 def _run_applescript(script):
@@ -99,7 +118,7 @@ end tell'''
 
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、全ターミナルを再配置"""
-    full_path = os.path.join(APPS_DIR, folder_name)
+    full_path = resolve_folder_path(folder_name)
     script = f'''
 tell application "Terminal"
     do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{folder_name}\\\\007\\" && claude --dangerously-skip-permissions"
