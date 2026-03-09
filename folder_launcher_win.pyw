@@ -41,15 +41,19 @@ APPS_DIR = os.path.join(os.environ.get("USERPROFILE", ""), "Google ドライブ"
 if not os.path.isdir(APPS_DIR):
     APPS_DIR = r"G:\マイドライブ\_Apps2026"
 
-# 画面の何%をターミナルに使うか（右寄せ。残りが左端のアイコン用余白）
+# 透明キーボードと同じ配置定数
 SCREEN_USE_RATIO = 0.95
-# 上下マージン（画面高さに対する割合）
 MARGIN_TOP_RATIO = 0.0
-MARGIN_BOTTOM_RATIO = 0.10
-# ウィンドウ影の重なり補正（論理ピクセル）
+MARGIN_BOTTOM_RATIO = 0.20  # キーボード領域を確保
 SHADOW_OVERLAP = 14
-# 最大ウィンドウ数
+SHADOW_INSET = 7  # ウィンドウ影の片側幅
 MAX_TERMINALS = 3
+KB_HEIGHT_RATIO = 0.20  # キーボード高さ = 画面の20%
+
+# 透明キーボードのパス
+KB_DIR = os.path.join(APPS_DIR, "透明キーボード")
+KB_EXE = os.path.join(KB_DIR, "透明キーボード.exe")
+KB_SCRIPT = os.path.join(KB_DIR, "transparent_keyboard.py")
 
 
 GDRIVE_DIR = os.path.dirname(APPS_DIR)  # マイドライブ直下
@@ -87,44 +91,110 @@ def resolve_folder_path(name):
     return direct  # フォールバック
 
 
-def _reposition_windows():
-    """全WTウィンドウを右寄せで再配置"""
+def _calc_layout():
+    """透明キーボードと同じ計算式でレイアウト情報を返す"""
     user32 = ctypes.windll.user32
     sw = user32.GetSystemMetrics(0)
-    sh = user32.GetSystemMetrics(1)
-
-    all_hwnds = _find_wt_windows()
-    if not all_hwnds:
-        return
-
-    all_hwnds = all_hwnds[:MAX_TERMINALS]
-
-    # x座標でソート
-    rects = []
-    rect = ctypes.wintypes.RECT()
-    for hwnd in all_hwnds:
-        user32.GetWindowRect(hwnd, ctypes.byref(rect))
-        rects.append((rect.left, hwnd))
-    rects.sort(key=lambda r: r[0])
-
-    # 配置計算（幅は常にMAX_TERMINALS分割時と同じ固定幅）
-    total_count = len(rects)
+    # 作業領域（タスクバーを除いた領域）
+    work_rect = ctypes.wintypes.RECT()
+    ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(work_rect), 0)
+    work_top = work_rect.top
+    work_h = work_rect.bottom - work_rect.top
+    # 幅は画面全体ベース
     total_w = int(sw * SCREEN_USE_RATIO)
     win_w = (total_w + SHADOW_OVERLAP * (MAX_TERMINALS - 1)) // MAX_TERMINALS
-    margin_top = int(sh * MARGIN_TOP_RATIO)
-    win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
+    # 高さは作業領域ベース
+    margin_top = int(work_h * MARGIN_TOP_RATIO) + work_top
+    term_h = work_h - int(work_h * MARGIN_TOP_RATIO) - int(work_h * MARGIN_BOTTOM_RATIO)
+    kb_h = int(work_h * KB_HEIGHT_RATIO) + SHADOW_INSET
+    return sw, work_h, win_w, margin_top, term_h, kb_h, work_top
 
-    x = sw
-    for i in range(total_count - 1, -1, -1):
-        _, hwnd = rects[i]
+
+def _find_kb_windows():
+    """透明キーボードのウィンドウハンドルを全て取得"""
+    user32 = ctypes.windll.user32
+    hwnds = []
+
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+    def enum_callback(hwnd, lparam):
+        if user32.IsWindowVisible(hwnd):
+            title_buf = ctypes.create_unicode_buffer(256)
+            cls_buf = ctypes.create_unicode_buffer(256)
+            user32.GetWindowTextW(hwnd, title_buf, 256)
+            user32.GetClassNameW(hwnd, cls_buf, 256)
+            if title_buf.value == '透明キーボード' and cls_buf.value == 'TkTopLevel':
+                hwnds.append(hwnd)
+        return True
+
+    user32.EnumWindows(enum_callback, 0)
+    return hwnds
+
+
+def _reposition_windows():
+    """ターミナル+キーボードを整列（透明キーボードの_realign_allと同じロジック）"""
+    user32 = ctypes.windll.user32
+    sw, work_h, win_w, margin_top, term_h, kb_h, work_top = _calc_layout()
+
+    # ターミナルを検出してx座標でソート
+    wt_hwnds = _find_wt_windows()[:MAX_TERMINALS]
+    rect = ctypes.wintypes.RECT()
+    wt_sorted = []
+    for hwnd in wt_hwnds:
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        wt_sorted.append((rect.left, hwnd))
+    wt_sorted.sort(key=lambda r: r[0])
+
+    # キーボードを検出してx座標でソート
+    kb_sorted = []
+    for hwnd in _find_kb_windows():
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        kb_sorted.append((rect.left, hwnd))
+    kb_sorted.sort(key=lambda r: r[0])
+
+    n_wt = len(wt_sorted)
+
+    # ターミナルを右寄せで再配置（右の影を画面外に押し出す）
+    x = sw + SHADOW_INSET
+    wt_positions = []
+    for i in range(n_wt - 1, -1, -1):
         x -= win_w
-        if i < total_count - 1:
+        if i < n_wt - 1:
             x += SHADOW_OVERLAP
-        user32.MoveWindow(hwnd, x, margin_top, win_w, win_h, True)
+        _, hwnd = wt_sorted[i]
+        user32.MoveWindow(hwnd, x, margin_top, win_w, term_h, True)
+        wt_positions.insert(0, x)
+
+    # キーボードを配置（ターミナルの真下、影に食い込ませる）
+    kb_w = win_w - SHADOW_INSET * 2
+    kb_y = margin_top + term_h - SHADOW_INSET
+    for i, (_, hwnd) in enumerate(kb_sorted):
+        if i < n_wt:
+            kx = wt_positions[i] + SHADOW_INSET
+        else:
+            if n_wt > 0:
+                kx = wt_positions[0] + SHADOW_INSET - kb_w
+                extra = i - n_wt
+                kx -= extra * kb_w
+            else:
+                kx = sw - kb_w - i * kb_w
+        user32.MoveWindow(hwnd, kx, kb_y, kb_w, kb_h, True)
+
+
+def _launch_keyboard():
+    """透明キーボードを1つ起動（既にMAX_TERMINALS個あればスキップ）"""
+    existing = len(_find_kb_windows())
+    if existing >= MAX_TERMINALS:
+        return
+    if os.path.exists(KB_EXE):
+        subprocess.Popen([KB_EXE, KB_SCRIPT], cwd=KB_DIR,
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    elif os.path.exists(KB_SCRIPT):
+        subprocess.Popen(['pythonw', KB_SCRIPT], cwd=KB_DIR,
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
 
 
 def open_terminals(folder_names):
-    """Windows Terminalウィンドウを起動し、全WT（既存含む）を右寄せで再配置"""
+    """Windows Terminalウィンドウを起動し、透明キーボードも同時起動して整列"""
     if not folder_names:
         return
 
@@ -140,6 +210,8 @@ def open_terminals(folder_names):
         subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
                          creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
                          env=env)
+        # 透明キーボードも一緒に起動
+        _launch_keyboard()
         time.sleep(0.5)
 
     # 新しいウィンドウが出揃うのを待つ
@@ -150,6 +222,8 @@ def open_terminals(folder_names):
         if len(new_hwnds) >= n:
             break
 
+    # キーボードが出揃うのも少し待つ
+    time.sleep(0.5)
     _reposition_windows()
 
 
