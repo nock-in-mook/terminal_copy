@@ -180,17 +180,35 @@ def _reposition_windows():
         user32.MoveWindow(hwnd, kx, kb_y, kb_w, kb_h, True)
 
 
-def _launch_keyboard():
-    """透明キーボードを1つ起動（既にMAX_TERMINALS個あればスキップ）"""
-    existing = len(_find_kb_windows())
-    if existing >= MAX_TERMINALS:
-        return
+def _launch_one_keyboard():
+    """透明キーボードを1つ起動"""
     if not os.path.exists(KB_SCRIPT):
         return
-    # pyコマンド（Pythonランチャー）でスクリプトを直接実行
-    # 透明キーボード.exeはランタイムDLL不足でtkinterが使えないため
-    subprocess.Popen(['py', '-3', KB_SCRIPT], cwd=KB_DIR,
+    env = os.environ.copy()
+    env.pop('TCL_LIBRARY', None)
+    env.pop('TK_LIBRARY', None)
+    subprocess.Popen(['py', '-3.14', KB_SCRIPT], cwd=KB_DIR, env=env,
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                      creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
+
+
+def _close_one_keyboard(hwnd):
+    """透明キーボードを1つ閉じる"""
+    ctypes.windll.user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
+
+
+def _sync_keyboards():
+    """キーボード数をターミナル数に合わせる（増やす or 減らす）"""
+    n_wt = len(_find_wt_windows())
+    kb_hwnds = _find_kb_windows()
+    n_kb = len(kb_hwnds)
+    # 足りなければ追加
+    for _ in range(n_wt - n_kb):
+        _launch_one_keyboard()
+        time.sleep(0.3)
+    # 多ければ閉じる（後ろから）
+    for i in range(n_kb - n_wt):
+        _close_one_keyboard(kb_hwnds[-(i + 1)])
 
 
 def open_terminals(folder_names):
@@ -210,8 +228,7 @@ def open_terminals(folder_names):
         subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
                          creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
                          env=env)
-        # 透明キーボードも一緒に起動
-        _launch_keyboard()
+        _launch_one_keyboard()
         time.sleep(0.5)
 
     # 新しいウィンドウが出揃うのを待つ
@@ -246,7 +263,9 @@ def _find_wt_windows():
 
 
 def bring_terminals_to_front():
-    """全WTウィンドウを再配置して最前面に出す"""
+    """全WTウィンドウを再配置して最前面に出す（キーボード数も同期）"""
+    _sync_keyboards()
+    time.sleep(0.5)
     _reposition_windows()
     user32 = ctypes.windll.user32
     hwnds = _find_wt_windows()
@@ -257,11 +276,12 @@ def bring_terminals_to_front():
 
 
 def close_all_terminals():
-    """全WTウィンドウを閉じる"""
+    """全WTウィンドウ＋全キーボードを閉じる"""
     user32 = ctypes.windll.user32
-    hwnds = _find_wt_windows()
     WM_CLOSE = 0x0010
-    for hwnd in hwnds:
+    for hwnd in _find_wt_windows():
+        user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
+    for hwnd in _find_kb_windows():
         user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
 
 
