@@ -185,12 +185,12 @@ def _launch_keyboard():
     existing = len(_find_kb_windows())
     if existing >= MAX_TERMINALS:
         return
-    if os.path.exists(KB_EXE):
-        subprocess.Popen([KB_EXE, KB_SCRIPT], cwd=KB_DIR,
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
-    elif os.path.exists(KB_SCRIPT):
-        subprocess.Popen(['pythonw', KB_SCRIPT], cwd=KB_DIR,
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    if not os.path.exists(KB_SCRIPT):
+        return
+    # pyコマンド（Pythonランチャー）でスクリプトを直接実行
+    # 透明キーボード.exeはランタイムDLL不足でtkinterが使えないため
+    subprocess.Popen(['py', '-3', KB_SCRIPT], cwd=KB_DIR,
+                     creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
 
 
 def open_terminals(folder_names):
