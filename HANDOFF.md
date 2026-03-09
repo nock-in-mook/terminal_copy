@@ -10,7 +10,7 @@
 - `即ランチャー.exe` — pythonw.exeコピー+アイコン・バージョン情報書き換え済み
 - `app.ico` — アイコン（トレイ・exe・ショートカット共通）
 - `python3.dll` / `python314.dll` / `python314._pth` — exe用ランタイム
-- `launcher.bat` — 1クリックセットアップ（exe生成・WT設定・ショートカット・起動を全自動）
+- `launcher.bat` — 1クリックセットアップ（既存停止・exe生成・WT設定・ショートカット・起動を全自動）
 - `_build_exe.py` — exe生成スクリプト（Win32 UpdateResourceW APIでバージョン情報書き換え）
 - `_setup_shortcuts.py` — ショートカット作成＆即ランチャー起動（日本語パス対応）
 - `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
@@ -34,11 +34,16 @@
 - Windows: Mutex（SokuLauncher_Mutex）
 - Mac: なし（rumpsの制約）
 
-## 最新の変更（セッション012）
-- SmartScreenをオフに設定（レジストリ: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SmartScreenEnabled = Off）
-- Googleドライブ上のexe実行時に毎回「信頼できない発行元」警告が出る問題を解決
+## 最新の変更（セッション013）
+- ターミナル起動時に透明キーボードも自動同時起動
+- 整列ロジックを透明キーボードの`_realign_all`と統一
+  - MARGIN_BOTTOM 10%→20%（キーボード領域確保）
+  - SHADOW_INSET=7（影補正）追加
+  - タスクバー除外の作業領域ベース計算
+  - キーボードウィンドウもターミナル真下に配置
+- Show Allでもキーボード含めて整列
+- launcher.batに既存プロセス停止を追加（他PC一発更新対応）
 
 ## 次のアクション
+- 他のPCでlauncher.bat実行して動作確認する
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
-- 別PCでlauncher.bat実行して動作確認する
-- 他のPCでもSmartScreen警告が出る場合は同様にオフにするか、exeをローカルにコピーする方式に変更
