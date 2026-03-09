@@ -181,15 +181,17 @@ def _reposition_windows():
 
 
 def _launch_one_keyboard():
-    """透明キーボードを1つ起動"""
-    if not os.path.exists(KB_SCRIPT):
-        return
-    env = os.environ.copy()
-    env.pop('TCL_LIBRARY', None)
-    env.pop('TK_LIBRARY', None)
-    subprocess.Popen(['py', '-3.14', KB_SCRIPT], cwd=KB_DIR, env=env,
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                     creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
+    """透明キーボードを1つ起動（EXEはTcl同梱なので環境変数の影響を受けない）"""
+    if os.path.exists(KB_EXE):
+        subprocess.Popen([KB_EXE], cwd=KB_DIR,
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    elif os.path.exists(KB_SCRIPT):
+        env = os.environ.copy()
+        env.pop('TCL_LIBRARY', None)
+        env.pop('TK_LIBRARY', None)
+        subprocess.Popen(['py', '-3.14', KB_SCRIPT], cwd=KB_DIR, env=env,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
 
 
 def _close_one_keyboard(hwnd):
@@ -228,7 +230,6 @@ def open_terminals(folder_names):
         subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
                          creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
                          env=env)
-        _launch_one_keyboard()
         time.sleep(0.5)
 
     # 新しいウィンドウが出揃うのを待つ
@@ -239,7 +240,8 @@ def open_terminals(folder_names):
         if len(new_hwnds) >= n:
             break
 
-    # キーボードが出揃うのも少し待つ
+    # キーボード数をターミナル数に同期してから整列
+    _sync_keyboards()
     time.sleep(0.5)
     _reposition_windows()
 
