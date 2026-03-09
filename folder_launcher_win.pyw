@@ -52,20 +52,23 @@ SHADOW_OVERLAP = 14
 MAX_TERMINALS = 3
 
 
+GDRIVE_DIR = os.path.dirname(APPS_DIR)  # マイドライブ直下
+OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
+
+
 def get_folders():
-    """フォルダ一覧を取得（_other_projects内も含む）"""
+    """フォルダ一覧を取得（_other-projects内も含む）"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
         # 除外フォルダ
-        exclude = {'images', 'text', 'テレパシーワード', '_other_projects'}
+        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
         folders = [e for e in entries
                    if not e.startswith('.') and e not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # _other_projects内のサブフォルダも追加
-        other_dir = os.path.join(APPS_DIR, '_other_projects')
-        if os.path.isdir(other_dir):
-            for e in sorted(os.listdir(other_dir), key=str.lower):
-                if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
+        # マイドライブ直下の_other-projects内のサブフォルダも追加
+        if os.path.isdir(OTHER_PROJECTS_DIR):
+            for e in sorted(os.listdir(OTHER_PROJECTS_DIR), key=str.lower):
+                if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
                     folders.append(e)
             folders.sort(key=str.lower)
         return folders
@@ -74,11 +77,11 @@ def get_folders():
 
 
 def resolve_folder_path(name):
-    """フォルダ名からフルパスを解決（_other_projects内も探す）"""
+    """フォルダ名からフルパスを解決（_other-projects内も探す）"""
     direct = os.path.join(APPS_DIR, name)
     if os.path.isdir(direct):
         return direct
-    other = os.path.join(APPS_DIR, '_other_projects', name)
+    other = os.path.join(OTHER_PROJECTS_DIR, name)
     if os.path.isdir(other):
         return other
     return direct  # フォールバック
