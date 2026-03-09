@@ -2,6 +2,11 @@
 chcp 65001 >nul
 title Setup
 
+:: Stop existing launcher (Mutex release for new instance)
+taskkill /f /im "即ランチャー.exe" >nul 2>&1
+timeout /t 1 /nobreak >nul
+echo Stopped existing launcher.
+
 :: Python
 set "PYTHON="
 if exist "C:\Python314\python.exe" (
