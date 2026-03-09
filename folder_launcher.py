@@ -5,10 +5,8 @@
 # - 最大4ウィンドウ、左寄せ配置（Dock幅分マージン）
 
 import os
-import sys
 import subprocess
 import time
-import unicodedata
 import rumps
 from AppKit import NSScreen
 
@@ -17,9 +15,7 @@ logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
                     format='%(asctime)s %(message)s')
 
 # 監視対象の親ディレクトリ
-GDRIVE_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ")
-APPS_DIR = os.path.join(GDRIVE_DIR, "_Apps2026")
-OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
+APPS_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026")
 
 # ウィンドウ幅（画面幅に対する割合）
 WIN_WIDTH_RATIO = 0.20
@@ -28,40 +24,34 @@ MARGIN_TOP_RATIO = 0.10
 MARGIN_BOTTOM_RATIO = 0.10
 # 最大ウィンドウ数
 MAX_TERMINALS = 4
-# tty → フォルダ名のマッピング（タイトル維持用）
-_tty_titles = {}
-
-
-def _normalize(s):
-    """macOSのNFDファイル名をNFCに正規化"""
-    return unicodedata.normalize('NFC', s)
 
 
 def get_folders():
-    """フォルダ一覧を取得（_other-projects内も含む）"""
+    """フォルダ一覧を取得（_other_projects内も含む）"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
-        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
+        exclude = {'images', 'text', 'テレパシーワード', '_other_projects'}
         folders = [e for e in entries
-                   if not e.startswith('.') and _normalize(e) not in exclude
+                   if not e.startswith('.') and e not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # マイドライブ直下の_other-projects内のサブフォルダも追加
-        if os.path.isdir(OTHER_PROJECTS_DIR):
-            for e in sorted(os.listdir(OTHER_PROJECTS_DIR), key=str.lower):
-                if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
+        # _other_projects内のサブフォルダも追加
+        other_dir = os.path.join(APPS_DIR, '_other_projects')
+        if os.path.isdir(other_dir):
+            for e in sorted(os.listdir(other_dir), key=str.lower):
+                if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
                     folders.append(e)
-        folders.sort(key=str.lower)
+            folders.sort(key=str.lower)
         return folders
     except OSError:
         return []
 
 
 def resolve_folder_path(name):
-    """フォルダ名からフルパスを解決（_other-projects内も探す）"""
+    """フォルダ名からフルパスを解決（_other_projects内も探す）"""
     direct = os.path.join(APPS_DIR, name)
     if os.path.isdir(direct):
         return direct
-    other = os.path.join(OTHER_PROJECTS_DIR, name)
+    other = os.path.join(APPS_DIR, '_other_projects', name)
     if os.path.isdir(other):
         return other
     return direct
@@ -111,8 +101,8 @@ def _reposition_windows():
     win_count = min(win_count, MAX_TERMINALS)
 
     win_w = int(sw * WIN_WIDTH_RATIO)
-    margin_top = menubar_h  # メニューバー直下にくっつける
-    win_h = sh - int(sh * (MARGIN_TOP_RATIO + MARGIN_BOTTOM_RATIO))  # 高さは従来と同じ
+    margin_top = int(sh * MARGIN_TOP_RATIO)
+    win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
 
     for i in range(win_count):
         x = dock_margin + i * win_w
@@ -129,42 +119,18 @@ end tell'''
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、全ターミナルを再配置"""
     full_path = resolve_folder_path(folder_name)
-    # 起動してttyを取得し、タイトルマッピングに登録
     script = f'''
 tell application "Terminal"
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
-    set ttyPath to tty of tab 1 of front window
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{folder_name}\\\\007\\" && claude --dangerously-skip-permissions"
     activate
-    return ttyPath
 end tell'''
-    tty = _run_applescript(script)
-    if tty:
-        _tty_titles[tty] = folder_name
+    _run_applescript(script)
     time.sleep(1.5)
     _reposition_windows()
 
 
-def _refresh_titles():
-    """全ターミナルのタイトルをフォルダ名で上書き"""
-    if not _tty_titles:
-        return
-    for tty, title in list(_tty_titles.items()):
-        script = f'''
-tell application "Terminal"
-    repeat with w in windows
-        repeat with t in tabs of w
-            if tty of t is "{tty}" then
-                set custom title of t to "{title}"
-            end if
-        end repeat
-    end repeat
-end tell'''
-        _run_applescript(script)
-
-
 def bring_terminals_to_front():
-    """全Terminal.appウィンドウを再配置して最前面に出す"""
-    _reposition_windows()
+    """全Terminal.appウィンドウを最前面に出す"""
     _run_applescript('tell application "Terminal" to activate')
 
 
@@ -177,11 +143,6 @@ class FolderLauncher(rumps.App):
     def __init__(self):
         super().__init__("📂", quit_button=None)
         self.menu = self._build_menu()
-
-    @rumps.timer(3)
-    def _title_keeper(self, _):
-        """3秒ごとにターミナルタイトルをフォルダ名に上書き"""
-        _refresh_titles()
 
     def _build_menu(self):
         folders = get_folders()
@@ -241,8 +202,4 @@ class FolderLauncher(rumps.App):
 
 
 if __name__ == "__main__":
-    # --show-all: 全ターミナルを最前面に出して終了（透明キーボード等から呼ばれる）
-    if "--show-all" in sys.argv:
-        bring_terminals_to_front()
-        sys.exit(0)
     FolderLauncher().run()
