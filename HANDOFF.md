@@ -34,12 +34,11 @@
 - Windows: Mutex（SokuLauncher_Mutex）
 - Mac: なし（rumpsの制約）
 
-## 最新の変更（セッション011）
-- ショートカット作成をPythonスクリプト(_setup_shortcuts.py)に移行（launcher.batの日本語パス変数展開問題を修正）
-- Win版: _other-projects（ハイフン、マイドライブ直下）を正しく参照するよう修正
-- othersを除外リストに追加
-- プロセス名が「即ランチャー」として正しく表示されることを確認
+## 最新の変更（セッション012）
+- SmartScreenをオフに設定（レジストリ: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SmartScreenEnabled = Off）
+- Googleドライブ上のexe実行時に毎回「信頼できない発行元」警告が出る問題を解決
 
 ## 次のアクション
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
 - 別PCでlauncher.bat実行して動作確認する
+- 他のPCでもSmartScreen警告が出る場合は同様にオフにするか、exeをローカルにコピーする方式に変更
