@@ -23,9 +23,9 @@ OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
 
 # ウィンドウ幅（画面幅に対する割合）
 WIN_WIDTH_RATIO = 0.20
-# 上下マージン（画面高さに対する割合）
-MARGIN_TOP_RATIO = 0.10
-MARGIN_BOTTOM_RATIO = 0.10
+# マージン（画面高さに対する割合）- 下20%はキーボード領域
+MARGIN_TOP_RATIO = 0.0
+MARGIN_BOTTOM_RATIO = 0.20
 # 最大ウィンドウ数
 MAX_TERMINALS = 4
 
