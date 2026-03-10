@@ -3,8 +3,10 @@
 # Mac版フォルダランチャー：メニューバー常駐
 # - [OPEN] サブメニューからフォルダ選択 → ターミナル起動
 # - 最大4ウィンドウ、左寄せ配置（Dock幅分マージン）
+# - 透明キーボード同期（ターミナル数 = キーボード数）
 
 import os
+import sys
 import subprocess
 import time
 import rumps
@@ -16,6 +18,8 @@ logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
 
 # 監視対象の親ディレクトリ
 APPS_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026")
+GDRIVE_DIR = os.path.dirname(APPS_DIR)  # マイドライブ直下
+OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
 
 # ウィンドウ幅（画面幅に対する割合）
 WIN_WIDTH_RATIO = 0.20
@@ -25,20 +29,24 @@ MARGIN_BOTTOM_RATIO = 0.10
 # 最大ウィンドウ数
 MAX_TERMINALS = 4
 
+# 透明キーボードのパス
+KB_DIR = os.path.join(APPS_DIR, "透明キーボード", "mac")
+KB_SCRIPT = os.path.join(KB_DIR, "transparent_keyboard_mac.py")
+
 
 def get_folders():
-    """フォルダ一覧を取得（_other_projects内も含む）"""
+    """フォルダ一覧を取得（_other-projects内も含む）"""
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
-        exclude = {'images', 'text', 'テレパシーワード', '_other_projects'}
+        # 除外フォルダ
+        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
         folders = [e for e in entries
                    if not e.startswith('.') and e not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # _other_projects内のサブフォルダも追加
-        other_dir = os.path.join(APPS_DIR, '_other_projects')
-        if os.path.isdir(other_dir):
-            for e in sorted(os.listdir(other_dir), key=str.lower):
-                if not e.startswith('.') and os.path.isdir(os.path.join(other_dir, e)):
+        # マイドライブ直下の_other-projects内のサブフォルダも追加
+        if os.path.isdir(OTHER_PROJECTS_DIR):
+            for e in sorted(os.listdir(OTHER_PROJECTS_DIR), key=str.lower):
+                if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
                     folders.append(e)
             folders.sort(key=str.lower)
         return folders
@@ -47,14 +55,14 @@ def get_folders():
 
 
 def resolve_folder_path(name):
-    """フォルダ名からフルパスを解決（_other_projects内も探す）"""
+    """フォルダ名からフルパスを解決（_other-projects内も探す）"""
     direct = os.path.join(APPS_DIR, name)
     if os.path.isdir(direct):
         return direct
-    other = os.path.join(APPS_DIR, '_other_projects', name)
+    other = os.path.join(OTHER_PROJECTS_DIR, name)
     if os.path.isdir(other):
         return other
-    return direct
+    return direct  # フォールバック
 
 
 def _run_applescript(script):
@@ -116,8 +124,66 @@ end tell'''
         _run_applescript(script)
 
 
+# === 透明キーボード同期 ===
+
+def _find_kb_pids():
+    """透明キーボードMac版のプロセスIDを全て取得"""
+    try:
+        result = subprocess.run(
+            ['pgrep', '-f', 'transparent_keyboard_mac.py'],
+            capture_output=True, text=True
+        )
+        pids = [int(p) for p in result.stdout.strip().split('\n') if p.strip()]
+        # 自分自身のPIDは除外
+        my_pid = os.getpid()
+        return [p for p in pids if p != my_pid]
+    except (ValueError, OSError):
+        return []
+
+
+def _launch_one_keyboard():
+    """透明キーボードを1つ起動"""
+    if os.path.exists(KB_SCRIPT):
+        subprocess.Popen(
+            ['python3', KB_SCRIPT],
+            cwd=KB_DIR,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+
+def _close_one_keyboard(pid):
+    """透明キーボードを1つ閉じる"""
+    try:
+        os.kill(pid, 15)  # SIGTERM
+    except OSError:
+        pass
+
+
+def _sync_keyboards():
+    """キーボード数をターミナル数に合わせる（増やす or 減らす）"""
+    n_wt = _get_terminal_window_count()
+    kb_pids = _find_kb_pids()
+    n_kb = len(kb_pids)
+    # 足りなければ追加
+    for _ in range(n_wt - n_kb):
+        _launch_one_keyboard()
+        time.sleep(0.3)
+    # 多ければ閉じる（後ろから）
+    for i in range(n_kb - n_wt):
+        _close_one_keyboard(kb_pids[-(i + 1)])
+
+
+def _close_all_keyboards():
+    """全ての透明キーボードを閉じる"""
+    for pid in _find_kb_pids():
+        _close_one_keyboard(pid)
+
+
+# === メイン関数 ===
+
 def open_terminal(folder_name):
-    """Terminal.appウィンドウを1つ起動し、全ターミナルを再配置"""
+    """Terminal.appウィンドウを1つ起動し、キーボード同期＆再配置"""
     full_path = resolve_folder_path(folder_name)
     script = f'''
 tell application "Terminal"
@@ -126,17 +192,23 @@ tell application "Terminal"
 end tell'''
     _run_applescript(script)
     time.sleep(1.5)
+    _sync_keyboards()
+    time.sleep(0.5)
     _reposition_windows()
 
 
 def bring_terminals_to_front():
-    """全Terminal.appウィンドウを最前面に出す"""
+    """全Terminal.appウィンドウを再配置＋最前面（キーボード数も同期）"""
+    _sync_keyboards()
+    time.sleep(0.5)
+    _reposition_windows()
     _run_applescript('tell application "Terminal" to activate')
 
 
 def close_all_terminals():
-    """全Terminal.appウィンドウを閉じる"""
+    """全Terminal.appウィンドウ＋全キーボードを閉じる"""
     _run_applescript('tell application "Terminal" to close every window')
+    _close_all_keyboards()
 
 
 class FolderLauncher(rumps.App):
@@ -187,14 +259,18 @@ class FolderLauncher(rumps.App):
         rumps.notification("Folder Launcher", "", "フォルダ一覧を更新しました")
 
     def _close_all(self, _):
-        """全ターミナルを閉じる（確認付き）"""
+        """全ターミナル＋キーボードを閉じる（確認2回）"""
         count = _get_terminal_window_count()
         if count == 0:
             rumps.alert("開いているターミナルはありません。")
             return
-        r = rumps.alert(f"{count}個のターミナルを全て閉じますか？\n保存していない作業は失われます。",
-                        ok="閉じる", cancel="キャンセル")
-        if r == 1:
+        r1 = rumps.alert(f"{count}個のターミナルを全て閉じますか？",
+                         ok="閉じる", cancel="キャンセル")
+        if r1 != 1:
+            return
+        r2 = rumps.alert("本当に閉じますか？\n保存していない作業は失われます。",
+                         ok="閉じる", cancel="キャンセル")
+        if r2 == 1:
             close_all_terminals()
 
     def _quit(self, _):
@@ -202,4 +278,8 @@ class FolderLauncher(rumps.App):
 
 
 if __name__ == "__main__":
+    # --show-all モード: 再配置＋最前面に出して終了
+    if "--show-all" in sys.argv:
+        bring_terminals_to_front()
+        sys.exit(0)
     FolderLauncher().run()
