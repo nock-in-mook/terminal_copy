@@ -65,7 +65,7 @@ def get_folders():
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
         # 除外フォルダ
-        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
+        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects', '即Claude'}
         folders = [e for e in entries
                    if not e.startswith('.') and e not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]

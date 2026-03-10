@@ -23,9 +23,9 @@ OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
 
 # ウィンドウ幅（画面幅に対する割合）
 WIN_WIDTH_RATIO = 0.20
-# マージン（画面高さに対する割合）- 下20%はキーボード領域
+# マージン（画面高さに対する割合）- 下25%はキーボード領域
 MARGIN_TOP_RATIO = 0.0
-MARGIN_BOTTOM_RATIO = 0.20
+MARGIN_BOTTOM_RATIO = 0.25
 # 最大ウィンドウ数
 MAX_TERMINALS = 4
 
@@ -39,7 +39,7 @@ def get_folders():
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
         # 除外フォルダ
-        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects'}
+        exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects', '即Claude'}
         folders = [e for e in entries
                    if not e.startswith('.') and e not in exclude
                    and os.path.isdir(os.path.join(APPS_DIR, e))]
@@ -100,7 +100,7 @@ end tell'''
 
 
 def _reposition_windows():
-    """全Terminal.appウィンドウを左寄せで再配置（Dock幅分のマージンあり）"""
+    """全Terminal.appウィンドウを左寄せで再配置し、キーボードをその真下に配置"""
     sw, sh, dock_margin, menubar_h = _get_screen_info()
     win_count = _get_terminal_window_count()
     if win_count == 0:
@@ -112,6 +112,7 @@ def _reposition_windows():
     margin_top = int(sh * MARGIN_TOP_RATIO)
     win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
 
+    kb_positions = []
     for i in range(win_count):
         x = dock_margin + i * win_w
         win_idx = win_count - i
@@ -122,6 +123,17 @@ tell application "Terminal"
     end if
 end tell'''
         _run_applescript(script)
+
+        # キーボード位置を計算（macOS座標系: 左下原点）
+        # AppleScriptのboundsはメニューバー下端が y=0 の左上原点座標
+        # ターミナル下端（左上原点）= margin_top + win_h
+        # macOS座標に変換: y = sh - menubar_h - (margin_top + win_h)
+        kb_x = x
+        kb_y = sh - menubar_h - (margin_top + win_h)
+        kb_positions.append((kb_x, kb_y))
+
+    # キーボードを同期配置
+    _sync_keyboards_with_positions(kb_positions)
 
 
 # === 透明キーボード同期 ===
@@ -141,11 +153,14 @@ def _find_kb_pids():
         return []
 
 
-def _launch_one_keyboard():
-    """透明キーボードを1つ起動"""
+def _launch_one_keyboard(x=None, y=None):
+    """透明キーボードを1つ起動（位置指定可能）"""
     if os.path.exists(KB_SCRIPT):
+        cmd = ['python3', KB_SCRIPT]
+        if x is not None and y is not None:
+            cmd += ['--x', str(x), '--y', str(y)]
         subprocess.Popen(
-            ['python3', KB_SCRIPT],
+            cmd,
             cwd=KB_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
@@ -160,18 +175,17 @@ def _close_one_keyboard(pid):
         pass
 
 
-def _sync_keyboards():
-    """キーボード数をターミナル数に合わせる（増やす or 減らす）"""
-    n_wt = _get_terminal_window_count()
-    kb_pids = _find_kb_pids()
-    n_kb = len(kb_pids)
-    # 足りなければ追加
-    for _ in range(n_wt - n_kb):
-        _launch_one_keyboard()
+def _sync_keyboards_with_positions(positions):
+    """キーボードを全て閉じてから、指定位置に必要数だけ起動し直す
+    positions: [(x, y), ...] ターミナル真下の座標リスト（macOS座標系）
+    """
+    # 既存を全て閉じる
+    _close_all_keyboards()
+    time.sleep(0.3)
+    # 必要数だけ起動
+    for (x, y) in positions:
+        _launch_one_keyboard(x=x, y=y)
         time.sleep(0.3)
-    # 多ければ閉じる（後ろから）
-    for i in range(n_kb - n_wt):
-        _close_one_keyboard(kb_pids[-(i + 1)])
 
 
 def _close_all_keyboards():
@@ -183,7 +197,7 @@ def _close_all_keyboards():
 # === メイン関数 ===
 
 def open_terminal(folder_name):
-    """Terminal.appウィンドウを1つ起動し、キーボード同期＆再配置"""
+    """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
     script = f'''
 tell application "Terminal"
@@ -192,15 +206,11 @@ tell application "Terminal"
 end tell'''
     _run_applescript(script)
     time.sleep(1.5)
-    _sync_keyboards()
-    time.sleep(0.5)
     _reposition_windows()
 
 
 def bring_terminals_to_front():
-    """全Terminal.appウィンドウを再配置＋最前面（キーボード数も同期）"""
-    _sync_keyboards()
-    time.sleep(0.5)
+    """全Terminal.appウィンドウを再配置＋最前面（キーボード同期含む）"""
     _reposition_windows()
     _run_applescript('tell application "Terminal" to activate')
 
