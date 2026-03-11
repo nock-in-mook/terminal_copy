@@ -35,23 +35,23 @@ KB_SCRIPT = os.path.join(KB_DIR, "transparent_keyboard_mac.py")
 
 
 def get_folders():
-    """フォルダ一覧を取得（_other-projects内も含む）"""
+    """フォルダ一覧を取得（_Apps2026内とother-projects内を分けて返す）
+    戻り値: (apps_folders, other_folders) のタプル
+    """
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
-        # 除外フォルダ
         exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects', '即Claude'}
-        folders = [e for e in entries
+        apps_folders = sorted([e for e in entries
                    if not e.startswith('.') and e not in exclude
-                   and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # マイドライブ直下の_other-projects内のサブフォルダも追加
+                   and os.path.isdir(os.path.join(APPS_DIR, e))], key=str.lower)
+        other_folders = []
         if os.path.isdir(OTHER_PROJECTS_DIR):
-            for e in sorted(os.listdir(OTHER_PROJECTS_DIR), key=str.lower):
-                if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
-                    folders.append(e)
-            folders.sort(key=str.lower)
-        return folders
+            other_folders = sorted([e for e in os.listdir(OTHER_PROJECTS_DIR)
+                        if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e))],
+                       key=str.lower)
+        return apps_folders, other_folders
     except OSError:
-        return []
+        return [], []
 
 
 def resolve_folder_path(name):
@@ -227,14 +227,20 @@ class FolderLauncher(rumps.App):
         self.menu = self._build_menu()
 
     def _build_menu(self):
-        folders = get_folders()
+        apps_folders, other_folders = get_folders()
         items = []
 
-        # [OPEN] → サブメニューでフォルダ一覧
+        # [OPEN] → サブメニューでフォルダ一覧（apps + セパレータ + other-projects）
         open_menu = rumps.MenuItem("[OPEN]")
-        for name in folders:
+        for name in apps_folders:
             item = rumps.MenuItem(name, callback=self._on_open_click)
             open_menu.add(item)
+        if other_folders:
+            if apps_folders:
+                open_menu.add(rumps.separator)
+            for name in other_folders:
+                item = rumps.MenuItem(name, callback=self._on_open_click)
+                open_menu.add(item)
         items.append(open_menu)
 
         items.append(rumps.separator)
@@ -291,5 +297,11 @@ if __name__ == "__main__":
     # --show-all モード: 再配置＋最前面に出して終了
     if "--show-all" in sys.argv:
         bring_terminals_to_front()
+        sys.exit(0)
+    # --open <フォルダ名> モード: 指定フォルダでターミナル起動して終了
+    if "--open" in sys.argv:
+        idx = sys.argv.index("--open")
+        if idx + 1 < len(sys.argv):
+            open_terminal(sys.argv[idx + 1])
         sys.exit(0)
     FolderLauncher().run()

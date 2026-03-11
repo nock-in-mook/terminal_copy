@@ -69,25 +69,26 @@ OTHER_PROJECTS_DIR = os.path.join(GDRIVE_DIR, "_other-projects")
 
 
 def get_folders():
-    """フォルダ一覧を取得（_other-projects内も含む）"""
+    """フォルダ一覧を取得（_Apps2026内とother-projects内を分けて返す）
+    戻り値: (apps_folders, other_folders) のタプル
+    """
     try:
         entries = sorted(os.listdir(APPS_DIR), key=str.lower)
-        # 除外フォルダ
         exclude = {'images', 'text', 'テレパシーワード', 'others', '_other_projects', '即Claude'}
-        folders = [e for e in entries
+        apps_folders = sorted([e for e in entries
                    if not e.startswith('.') and e not in exclude
-                   and os.path.isdir(os.path.join(APPS_DIR, e))]
-        # マイドライブ直下の_other-projects内のサブフォルダも追加
+                   and os.path.isdir(os.path.join(APPS_DIR, e))], key=str.lower)
+        # マイドライブ直下の_other-projects内のサブフォルダ
+        other_folders = []
         if os.path.isdir(OTHER_PROJECTS_DIR):
-            for e in sorted(os.listdir(OTHER_PROJECTS_DIR), key=str.lower):
-                if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
-                    folders.append(e)
-            folders.sort(key=str.lower)
-        logging.debug(f"get_folders: {len(folders)}件 = {folders}")
-        return folders
+            other_folders = sorted([e for e in os.listdir(OTHER_PROJECTS_DIR)
+                        if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e))],
+                       key=str.lower)
+        logging.debug(f"get_folders: apps={len(apps_folders)}件, other={len(other_folders)}件")
+        return apps_folders, other_folders
     except Exception:
         logging.error(f"get_folders でエラー:\n{traceback.format_exc()}")
-        return []
+        return [], []
 
 
 def resolve_folder_path(name):
@@ -351,14 +352,20 @@ class App:
     # === トレイメニュー ===
 
     def _build_menu(self):
-        folders = get_folders()
+        apps_folders, other_folders = get_folders()
         items = []
 
-        # OPEN → サブメニューでフォルダ一覧
+        # OPEN → サブメニューでフォルダ一覧（apps + セパレータ + other-projects）
         open_items = []
-        for name in folders:
-            logging.debug(f"メニュー項目追加: {name!r}")
+        for name in apps_folders:
+            logging.debug(f"メニュー項目追加(apps): {name!r}")
             open_items.append(pystray.MenuItem(name, self._make_single_callback(name)))
+        if other_folders:
+            if open_items:
+                open_items.append(pystray.Menu.SEPARATOR)
+            for name in other_folders:
+                logging.debug(f"メニュー項目追加(other): {name!r}")
+                open_items.append(pystray.MenuItem(name, self._make_single_callback(name)))
         if not open_items:
             open_items.append(pystray.MenuItem("(empty)", None, enabled=False))
         items.append(pystray.MenuItem("OPEN", pystray.Menu(*open_items)))
