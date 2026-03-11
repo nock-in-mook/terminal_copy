@@ -11,6 +11,14 @@ import threading
 import ctypes
 import ctypes.wintypes
 import time
+import logging
+import traceback
+
+# デバッグログ
+_log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'launcher_debug.log')
+logging.basicConfig(filename=_log_path, level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    encoding='utf-8')
 
 # Tcl/Tkライブラリのパス設定（即ランチャー.exeから起動時に必要）
 for _d in [os.path.dirname(sys.executable)] + sys.path:
@@ -75,8 +83,10 @@ def get_folders():
                 if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e)):
                     folders.append(e)
             folders.sort(key=str.lower)
+        logging.debug(f"get_folders: {len(folders)}件 = {folders}")
         return folders
-    except OSError:
+    except Exception:
+        logging.error(f"get_folders でエラー:\n{traceback.format_exc()}")
         return []
 
 
@@ -347,7 +357,10 @@ class App:
         # OPEN → サブメニューでフォルダ一覧
         open_items = []
         for name in folders:
+            logging.debug(f"メニュー項目追加: {name!r}")
             open_items.append(pystray.MenuItem(name, self._make_single_callback(name)))
+        if not open_items:
+            open_items.append(pystray.MenuItem("(empty)", None, enabled=False))
         items.append(pystray.MenuItem("OPEN", pystray.Menu(*open_items)))
         items.append(pystray.Menu.SEPARATOR)
 
@@ -356,7 +369,7 @@ class App:
         items.append(pystray.Menu.SEPARATOR)
 
         # Refresh, Close All, Quit
-        items.append(pystray.MenuItem("Refresh", lambda: self._rebuild_menu()))
+        items.append(pystray.MenuItem("Refresh", lambda: self.root.after(0, self._rebuild_menu)))
         items.append(pystray.MenuItem("Close All", lambda: self._close_all()))
         items.append(pystray.MenuItem("Quit", lambda: self._quit()))
         return pystray.Menu(*items)
@@ -367,7 +380,16 @@ class App:
         return callback
 
     def _rebuild_menu(self):
-        self.icon.menu = self._build_menu()
+        try:
+            logging.debug("_rebuild_menu 開始")
+            folders = get_folders()
+            logging.debug(f"フォルダ一覧取得成功: {folders}")
+            new_menu = self._build_menu()
+            logging.debug("メニュー構築成功")
+            self.icon.menu = new_menu
+            logging.debug("メニュー設定完了")
+        except Exception:
+            logging.error(f"_rebuild_menu でエラー:\n{traceback.format_exc()}")
 
     def _quit(self):
         def do_quit():
