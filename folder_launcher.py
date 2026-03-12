@@ -12,7 +12,7 @@ import subprocess
 import time
 
 import objc
-from Foundation import NSObject, NSMakePoint
+from Foundation import NSObject, NSMakePoint, NSTimer
 from AppKit import (
     NSApplication,
     NSApplicationActivationPolicyAccessory,
@@ -46,6 +46,9 @@ MAX_TERMINALS = 4
 # 透明キーボードのパス
 KB_DIR = os.path.join(APPS_DIR, "透明キーボード", "mac")
 KB_SCRIPT = os.path.join(KB_DIR, "transparent_keyboard_mac.py")
+
+# tty → フォルダ名のマッピング（タイトル維持用）
+_tty_titles = {}
 
 
 def get_folders():
@@ -133,16 +136,23 @@ def _reposition_windows():
     kb_h = (sh - menubar_h) - (margin_top + win_h)
 
     kb_positions = []
+    kb_titles = []
     for i in range(win_count):
         x = dock_margin + i * win_w
         win_idx = win_count - i
+        # ターミナル配置＆tty取得
         script = f'''
 tell application "Terminal"
     if (count of windows) >= {win_idx} then
         set bounds of window {win_idx} to {{{x}, {margin_top}, {x + win_w}, {margin_top + win_h}}}
+        return tty of tab 1 of window {win_idx}
     end if
 end tell'''
-        _run_applescript(script)
+        tty = _run_applescript(script)
+
+        # ttyからフォルダ名を取得
+        title = _tty_titles.get(tty, '') if tty else ''
+        kb_titles.append(title)
 
         # キーボード位置を計算（macOS座標系: 左下原点）
         kb_x = x
@@ -150,7 +160,7 @@ end tell'''
         kb_positions.append((kb_x, kb_y))
 
     # キーボードを同期配置（ターミナルと同じ幅、残りスペースの高さ）
-    _sync_keyboards_with_positions(kb_positions, kb_w=kb_w, kb_h=kb_h)
+    _sync_keyboards_with_positions(kb_positions, kb_w=kb_w, kb_h=kb_h, titles=kb_titles)
 
 
 # === 透明キーボード同期 ===
@@ -170,8 +180,8 @@ def _find_kb_pids():
         return []
 
 
-def _launch_one_keyboard(x=None, y=None, width=None, height=None, slot=0):
-    """透明キーボードを1つ起動（位置・サイズ・スロット指定）"""
+def _launch_one_keyboard(x=None, y=None, width=None, height=None, slot=0, title=''):
+    """透明キーボードを1つ起動（位置・サイズ・スロット・タイトル指定）"""
     if os.path.exists(KB_SCRIPT):
         cmd = ['python3', KB_SCRIPT]
         if x is not None and y is not None:
@@ -181,6 +191,8 @@ def _launch_one_keyboard(x=None, y=None, width=None, height=None, slot=0):
         if height is not None:
             cmd += ['--height', str(height)]
         cmd += ['--slot', str(slot)]
+        if title:
+            cmd += ['--title', title]
         subprocess.Popen(
             cmd,
             cwd=KB_DIR,
@@ -197,17 +209,21 @@ def _close_one_keyboard(pid):
         pass
 
 
-def _sync_keyboards_with_positions(positions, kb_w=None, kb_h=None):
+def _sync_keyboards_with_positions(positions, kb_w=None, kb_h=None, titles=None):
     """キーボードを全て閉じてから、指定位置に必要数だけ起動し直す
     positions: [(x, y), ...] ターミナル真下の座標リスト（macOS座標系）
     kb_w: キーボード幅, kb_h: キーボード高さ
+    titles: [str, ...] 各スロットのフォルダ名
     """
+    if titles is None:
+        titles = [''] * len(positions)
     # 既存を全て閉じる
     _close_all_keyboards()
     time.sleep(0.3)
     # 必要数だけ起動（スロット番号でテーマを分ける）
     for slot, (x, y) in enumerate(positions):
-        _launch_one_keyboard(x=x, y=y, width=kb_w, height=kb_h, slot=slot)
+        title = titles[slot] if slot < len(titles) else ''
+        _launch_one_keyboard(x=x, y=y, width=kb_w, height=kb_h, slot=slot, title=title)
         time.sleep(0.2)
 
 
@@ -222,14 +238,45 @@ def _close_all_keyboards():
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
+    # 起動してttyを取得し、タイトルマッピングに登録
     script = f'''
 tell application "Terminal"
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{folder_name}\\\\007\\" && claude --dangerously-skip-permissions"
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
+    tell tab 1 of front window
+        set custom title to "{folder_name}"
+        set title displays custom title to true
+        set title displays device name to false
+        set title displays shell path to false
+        set title displays window size to false
+        set title displays file name to false
+    end tell
+    set ttyPath to tty of tab 1 of front window
     activate
+    return ttyPath
 end tell'''
-    _run_applescript(script)
+    tty = _run_applescript(script)
+    if tty:
+        _tty_titles[tty] = folder_name
     time.sleep(1.5)
     _reposition_windows()
+
+
+def _refresh_titles():
+    """全ターミナルのタイトルをフォルダ名で上書き（Claude Codeの上書きを防ぐ）"""
+    if not _tty_titles:
+        return
+    for tty, title in list(_tty_titles.items()):
+        script = f'''
+tell application "Terminal"
+    repeat with w in windows
+        repeat with t in tabs of w
+            if tty of t is "{tty}" then
+                set custom title of t to "{title}"
+            end if
+        end repeat
+    end repeat
+end tell'''
+        _run_applescript(script)
 
 
 def bring_terminals_to_front():
@@ -291,6 +338,20 @@ def _is_desktop_click(x, y):
     return True
 
 
+class _Invoker(NSObject):
+    """NSTimerコールバック用ヘルパー"""
+    def initWithBlock_(self, block):
+        self = objc.super(_Invoker, self).init()
+        if self is None:
+            return None
+        self._block = block
+        return self
+
+    def invoke_(self, timer):
+        if self._block:
+            self._block()
+
+
 class DesktopLauncher(NSObject):
     """デスクトップダブルクリックでポップアップメニューを表示するランチャー"""
 
@@ -308,6 +369,11 @@ class DesktopLauncher(NSObject):
         NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
             NSLeftMouseDownMask,
             self._on_global_click
+        )
+        # 3秒ごとにターミナルタイトルをフォルダ名で上書き
+        invoker = _Invoker.alloc().initWithBlock_(_refresh_titles)
+        self._title_timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+            3.0, invoker, "invoke:", None, True
         )
         print("即ランチャー起動: デスクトップダブルクリック待機中", flush=True)
 
