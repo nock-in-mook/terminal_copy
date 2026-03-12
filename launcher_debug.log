@@ -1736,3 +1736,72 @@
 2026-03-13 03:29:53,254 DEBUG get_folders: apps=11件, other=3件
 2026-03-13 03:29:56,793 DEBUG デスクトップダブルクリック検出: (1098, 499)
 2026-03-13 03:29:56,814 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:32:04,295 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:32:04,297 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 03:32:04,298 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 03:32:04,298 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 03:32:04,298 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 03:32:04,298 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 03:32:04,299 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 03:32:04,299 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 03:32:04,299 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 03:32:04,299 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 03:32:04,299 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 03:32:04,300 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 03:32:04,300 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 03:32:04,300 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 03:32:04,300 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 03:32:04,304 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 03:32:04,331 DEBUG Importing AvifImagePlugin
+2026-03-13 03:32:04,333 DEBUG Importing BlpImagePlugin
+2026-03-13 03:32:04,334 DEBUG Importing BmpImagePlugin
+2026-03-13 03:32:04,335 DEBUG Importing BufrStubImagePlugin
+2026-03-13 03:32:04,336 DEBUG Importing CurImagePlugin
+2026-03-13 03:32:04,337 DEBUG Importing DcxImagePlugin
+2026-03-13 03:32:04,338 DEBUG Importing DdsImagePlugin
+2026-03-13 03:32:04,342 DEBUG Importing EpsImagePlugin
+2026-03-13 03:32:04,343 DEBUG Importing FitsImagePlugin
+2026-03-13 03:32:04,345 DEBUG Importing FliImagePlugin
+2026-03-13 03:32:04,346 DEBUG Importing FpxImagePlugin
+2026-03-13 03:32:04,348 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 03:32:04,348 DEBUG Importing FtexImagePlugin
+2026-03-13 03:32:04,349 DEBUG Importing GbrImagePlugin
+2026-03-13 03:32:04,350 DEBUG Importing GifImagePlugin
+2026-03-13 03:32:04,350 DEBUG Importing GribStubImagePlugin
+2026-03-13 03:32:04,351 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 03:32:04,351 DEBUG Importing IcnsImagePlugin
+2026-03-13 03:32:04,354 DEBUG Importing IcoImagePlugin
+2026-03-13 03:32:04,355 DEBUG Importing ImImagePlugin
+2026-03-13 03:32:04,356 DEBUG Importing ImtImagePlugin
+2026-03-13 03:32:04,357 DEBUG Importing IptcImagePlugin
+2026-03-13 03:32:04,358 DEBUG Importing JpegImagePlugin
+2026-03-13 03:32:04,359 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 03:32:04,359 DEBUG Importing McIdasImagePlugin
+2026-03-13 03:32:04,360 DEBUG Importing MicImagePlugin
+2026-03-13 03:32:04,362 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 03:32:04,362 DEBUG Importing MpegImagePlugin
+2026-03-13 03:32:04,362 DEBUG Importing MpoImagePlugin
+2026-03-13 03:32:04,364 DEBUG Importing MspImagePlugin
+2026-03-13 03:32:04,365 DEBUG Importing PalmImagePlugin
+2026-03-13 03:32:04,366 DEBUG Importing PcdImagePlugin
+2026-03-13 03:32:04,367 DEBUG Importing PcxImagePlugin
+2026-03-13 03:32:04,367 DEBUG Importing PdfImagePlugin
+2026-03-13 03:32:04,374 DEBUG Importing PixarImagePlugin
+2026-03-13 03:32:04,375 DEBUG Importing PngImagePlugin
+2026-03-13 03:32:04,376 DEBUG Importing PpmImagePlugin
+2026-03-13 03:32:04,376 DEBUG Importing PsdImagePlugin
+2026-03-13 03:32:04,377 DEBUG Importing QoiImagePlugin
+2026-03-13 03:32:04,378 DEBUG Importing SgiImagePlugin
+2026-03-13 03:32:04,379 DEBUG Importing SpiderImagePlugin
+2026-03-13 03:32:04,379 DEBUG Importing SunImagePlugin
+2026-03-13 03:32:04,380 DEBUG Importing TgaImagePlugin
+2026-03-13 03:32:04,381 DEBUG Importing TiffImagePlugin
+2026-03-13 03:32:04,381 DEBUG Importing WebPImagePlugin
+2026-03-13 03:32:04,382 DEBUG Importing WmfImagePlugin
+2026-03-13 03:32:04,383 DEBUG Importing XbmImagePlugin
+2026-03-13 03:32:04,384 DEBUG Importing XpmImagePlugin
+2026-03-13 03:32:04,385 DEBUG Importing XVThumbImagePlugin
+2026-03-13 03:32:05,573 DEBUG デスクトップダブルクリック検出: (1202, 625)
+2026-03-13 03:32:05,590 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:32:06,984 DEBUG デスクトップダブルクリック検出: (999, 609)
+2026-03-13 03:32:07,001 DEBUG get_folders: apps=11件, other=3件
