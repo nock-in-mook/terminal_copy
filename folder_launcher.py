@@ -304,4 +304,9 @@ if __name__ == "__main__":
         if idx + 1 < len(sys.argv):
             open_terminal(sys.argv[idx + 1])
         sys.exit(0)
-    FolderLauncher().run()
+    # クラッシュ保護: 未処理例外をログに記録
+    try:
+        FolderLauncher().run()
+    except Exception as e:
+        logging.critical(f"即ランチャーがクラッシュ: {e}", exc_info=True)
+        raise
