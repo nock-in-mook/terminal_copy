@@ -21,6 +21,13 @@ for old_name in ["Folder Launcher.lnk"]:
             os.remove(old)
             print(f"Deleted old: {old}")
 
+# 透明キーボードのスタートアップを削除（即ランチャーが制御するため単体起動不要）
+for kb_name in ["透明キーボード.lnk"]:
+    kb_startup = os.path.join(APPDATA, "Microsoft", "Windows", "Start Menu", "Programs", "Startup", kb_name)
+    if os.path.exists(kb_startup):
+        os.remove(kb_startup)
+        print(f"Removed keyboard startup: {kb_startup}")
+
 # PowerShellスクリプトをファイル経由で実行（bashの$エスケープ問題回避）
 ps_script = f'''
 $shell = New-Object -ComObject WScript.Shell

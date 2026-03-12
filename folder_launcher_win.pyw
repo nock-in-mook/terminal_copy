@@ -254,39 +254,27 @@ def _close_one_keyboard(hwnd):
     ctypes.windll.user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
 
 
-_sync_lock = threading.Lock()
-
-def _sync_keyboards():
-    """キーボード数をターミナル数に合わせる（増やす or 減らす）"""
-    if not _sync_lock.acquire(blocking=False):
-        return  # 別スレッドで同期中なのでスキップ
-    try:
-        n_wt = len(_find_wt_windows())
-        n_kb = len(_find_kb_windows())
-        logging.debug(f"_sync_keyboards開始: WT={n_wt}, KB={n_kb}")
-        # 足りなければ必要数だけ一括起動し、全部揃うまで待つ
-        need = n_wt - n_kb
-        if need > 0:
-            logging.debug(f"キーボード{need}個起動")
-            for _ in range(need):
-                _launch_one_keyboard()
-            # 全部揃うまで待つ（最大15秒）
-            for _ in range(150):
-                time.sleep(0.1)
-                n_kb = len(_find_kb_windows())
-                if n_kb >= n_wt:
-                    logging.debug(f"キーボード全数検出: KB={n_kb}")
-                    break
-        # 多ければ閉じる
-        n_kb = len(_find_kb_windows())
-        if n_kb > n_wt:
-            logging.debug(f"キーボード過多: KB={n_kb} > WT={n_wt}, {n_kb - n_wt}個閉じる")
-            kb_hwnds = _find_kb_windows()
-            for i in range(n_kb - n_wt):
-                _close_one_keyboard(kb_hwnds[-(i + 1)])
-        logging.debug(f"_sync_keyboards完了: WT={n_wt}, KB={len(_find_kb_windows())}")
-    finally:
-        _sync_lock.release()
+def _launch_keyboards_exact(target_count):
+    """キーボードをぴったりtarget_count個にする（バックグラウンド用）"""
+    n_kb = len(_find_kb_windows())
+    need = target_count - n_kb
+    logging.debug(f"キーボード同期: 現在{n_kb}個, 目標{target_count}個, 起動{max(need,0)}個")
+    if need > 0:
+        for _ in range(need):
+            _launch_one_keyboard()
+        # 揃うまで待つ（最大20秒）
+        for _ in range(200):
+            time.sleep(0.1)
+            if len(_find_kb_windows()) >= target_count:
+                break
+    # 多すぎたら閉じる
+    kb_hwnds = _find_kb_windows()
+    excess = len(kb_hwnds) - target_count
+    if excess > 0:
+        logging.debug(f"キーボード過多: {len(kb_hwnds)}個 > {target_count}個, {excess}個閉じる")
+        for i in range(excess):
+            _close_one_keyboard(kb_hwnds[-(i + 1)])
+    logging.debug(f"キーボード同期完了: {len(_find_kb_windows())}個")
 
 
 def open_terminals(folder_names):
@@ -294,8 +282,9 @@ def open_terminals(folder_names):
     if not folder_names:
         return
 
-    # 起動前のWTウィンドウを記録
+    # 起動後の合計WT数を事前計算
     before_hwnds = set(_find_wt_windows())
+    target_wt = len(before_hwnds) + len(folder_names)
     n = len(folder_names)
 
     # 新しいターミナルを起動（タブタイトル設定 + Claude自動起動）
@@ -319,12 +308,11 @@ def open_terminals(folder_names):
     # ターミナルだけ先に整列（体感速度優先）
     _reposition_windows()
 
-    # キーボードの起動・整列はバックグラウンドで（遅くてOK）
-    def _bg_sync():
-        _sync_keyboards()
-        time.sleep(0.5)
+    # キーボードはバックグラウンドで目標数ぴったりに合わせる
+    def _bg():
+        _launch_keyboards_exact(target_wt)
         _reposition_windows()
-    threading.Thread(target=_bg_sync, daemon=True).start()
+    threading.Thread(target=_bg, daemon=True).start()
 
 
 def _find_wt_windows():
@@ -346,16 +334,20 @@ def _find_wt_windows():
 
 
 def bring_terminals_to_front():
-    """全WTウィンドウを再配置して最前面に出す（キーボード数も同期）"""
-    _sync_keyboards()
-    time.sleep(0.5)
+    """全WTウィンドウを再配置して最前面に出す（キーボード同期はバックグラウンド）"""
     _reposition_windows()
     user32 = ctypes.windll.user32
     hwnds = _find_wt_windows()
+    target_wt = len(hwnds)
     for hwnd in reversed(hwnds):
         user32.ShowWindow(hwnd, 9)  # SW_RESTORE
         user32.SetForegroundWindow(hwnd)
         time.sleep(0.05)
+    # キーボードはバックグラウンドでWT数にぴったり合わせる
+    def _bg():
+        _launch_keyboards_exact(target_wt)
+        _reposition_windows()
+    threading.Thread(target=_bg, daemon=True).start()
 
 
 def close_all_terminals():
