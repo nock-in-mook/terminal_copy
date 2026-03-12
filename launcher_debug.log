@@ -276,3 +276,931 @@
 2026-03-11 18:28:04,839 DEBUG Importing XbmImagePlugin
 2026-03-11 18:28:04,840 DEBUG Importing XpmImagePlugin
 2026-03-11 18:28:04,842 DEBUG Importing XVThumbImagePlugin
+2026-03-13 01:48:10,007 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 01:48:10,020 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 01:48:10,020 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 01:48:10,020 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 01:48:10,021 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 01:48:10,021 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 01:48:10,021 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 01:48:10,021 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 01:48:10,021 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 01:48:10,022 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 01:48:10,022 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 01:48:10,022 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 01:48:10,022 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 01:48:10,023 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 01:48:10,023 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 01:48:10,257 DEBUG Importing AvifImagePlugin
+2026-03-13 01:48:10,299 DEBUG Importing BlpImagePlugin
+2026-03-13 01:48:10,310 DEBUG Importing BmpImagePlugin
+2026-03-13 01:48:10,310 DEBUG Importing BufrStubImagePlugin
+2026-03-13 01:48:10,321 DEBUG Importing CurImagePlugin
+2026-03-13 01:48:10,331 DEBUG Importing DcxImagePlugin
+2026-03-13 01:48:10,363 DEBUG Importing DdsImagePlugin
+2026-03-13 01:48:10,380 DEBUG Importing EpsImagePlugin
+2026-03-13 01:48:10,394 DEBUG Importing FitsImagePlugin
+2026-03-13 01:48:10,433 DEBUG Importing FliImagePlugin
+2026-03-13 01:48:10,449 DEBUG Importing FpxImagePlugin
+2026-03-13 01:48:10,464 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 01:48:10,464 DEBUG Importing FtexImagePlugin
+2026-03-13 01:48:10,484 DEBUG Importing GbrImagePlugin
+2026-03-13 01:48:10,501 DEBUG Importing GifImagePlugin
+2026-03-13 01:48:10,502 DEBUG Importing GribStubImagePlugin
+2026-03-13 01:48:10,519 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 01:48:10,537 DEBUG Importing IcnsImagePlugin
+2026-03-13 01:48:10,588 DEBUG Importing IcoImagePlugin
+2026-03-13 01:48:10,606 DEBUG Importing ImImagePlugin
+2026-03-13 01:48:10,623 DEBUG Importing ImtImagePlugin
+2026-03-13 01:48:10,638 DEBUG Importing IptcImagePlugin
+2026-03-13 01:48:10,655 DEBUG Importing JpegImagePlugin
+2026-03-13 01:48:10,656 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 01:48:10,657 DEBUG Importing McIdasImagePlugin
+2026-03-13 01:48:10,673 DEBUG Importing MicImagePlugin
+2026-03-13 01:48:10,693 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 01:48:10,694 DEBUG Importing MpegImagePlugin
+2026-03-13 01:48:10,705 DEBUG Importing MpoImagePlugin
+2026-03-13 01:48:10,736 DEBUG Importing MspImagePlugin
+2026-03-13 01:48:10,755 DEBUG Importing PalmImagePlugin
+2026-03-13 01:48:10,765 DEBUG Importing PcdImagePlugin
+2026-03-13 01:48:10,774 DEBUG Importing PcxImagePlugin
+2026-03-13 01:48:10,774 DEBUG Importing PdfImagePlugin
+2026-03-13 01:48:10,816 DEBUG Importing PixarImagePlugin
+2026-03-13 01:48:10,830 DEBUG Importing PngImagePlugin
+2026-03-13 01:48:10,831 DEBUG Importing PpmImagePlugin
+2026-03-13 01:48:10,832 DEBUG Importing PsdImagePlugin
+2026-03-13 01:48:10,843 DEBUG Importing QoiImagePlugin
+2026-03-13 01:48:10,855 DEBUG Importing SgiImagePlugin
+2026-03-13 01:48:10,870 DEBUG Importing SpiderImagePlugin
+2026-03-13 01:48:10,882 DEBUG Importing SunImagePlugin
+2026-03-13 01:48:10,894 DEBUG Importing TgaImagePlugin
+2026-03-13 01:48:10,907 DEBUG Importing TiffImagePlugin
+2026-03-13 01:48:10,908 DEBUG Importing WebPImagePlugin
+2026-03-13 01:48:10,950 DEBUG Importing WmfImagePlugin
+2026-03-13 01:48:10,959 DEBUG Importing XbmImagePlugin
+2026-03-13 01:48:10,975 DEBUG Importing XpmImagePlugin
+2026-03-13 01:48:10,989 DEBUG Importing XVThumbImagePlugin
+2026-03-13 01:56:26,925 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 01:56:26,927 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 01:56:26,927 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 01:56:26,928 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 01:56:26,928 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 01:56:26,928 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 01:56:26,928 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 01:56:26,928 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 01:56:26,929 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 01:56:26,929 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 01:56:26,929 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 01:56:26,929 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 01:56:26,930 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 01:56:26,930 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 01:56:26,930 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 01:56:26,933 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 01:56:26,991 DEBUG Importing AvifImagePlugin
+2026-03-13 01:56:26,994 DEBUG Importing BlpImagePlugin
+2026-03-13 01:56:26,997 DEBUG Importing BmpImagePlugin
+2026-03-13 01:56:26,997 DEBUG Importing BufrStubImagePlugin
+2026-03-13 01:56:26,998 DEBUG Importing CurImagePlugin
+2026-03-13 01:56:27,001 DEBUG Importing DcxImagePlugin
+2026-03-13 01:56:27,004 DEBUG Importing DdsImagePlugin
+2026-03-13 01:56:27,009 DEBUG Importing EpsImagePlugin
+2026-03-13 01:56:27,011 DEBUG Importing FitsImagePlugin
+2026-03-13 01:56:27,014 DEBUG Importing FliImagePlugin
+2026-03-13 01:56:27,015 DEBUG Importing FpxImagePlugin
+2026-03-13 01:56:27,019 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 01:56:27,019 DEBUG Importing FtexImagePlugin
+2026-03-13 01:56:27,020 DEBUG Importing GbrImagePlugin
+2026-03-13 01:56:27,021 DEBUG Importing GifImagePlugin
+2026-03-13 01:56:27,021 DEBUG Importing GribStubImagePlugin
+2026-03-13 01:56:27,022 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 01:56:27,022 DEBUG Importing IcnsImagePlugin
+2026-03-13 01:56:27,024 DEBUG Importing IcoImagePlugin
+2026-03-13 01:56:27,026 DEBUG Importing ImImagePlugin
+2026-03-13 01:56:27,027 DEBUG Importing ImtImagePlugin
+2026-03-13 01:56:27,028 DEBUG Importing IptcImagePlugin
+2026-03-13 01:56:27,029 DEBUG Importing JpegImagePlugin
+2026-03-13 01:56:27,029 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 01:56:27,029 DEBUG Importing McIdasImagePlugin
+2026-03-13 01:56:27,030 DEBUG Importing MicImagePlugin
+2026-03-13 01:56:27,032 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 01:56:27,033 DEBUG Importing MpegImagePlugin
+2026-03-13 01:56:27,034 DEBUG Importing MpoImagePlugin
+2026-03-13 01:56:27,037 DEBUG Importing MspImagePlugin
+2026-03-13 01:56:27,038 DEBUG Importing PalmImagePlugin
+2026-03-13 01:56:27,039 DEBUG Importing PcdImagePlugin
+2026-03-13 01:56:27,040 DEBUG Importing PcxImagePlugin
+2026-03-13 01:56:27,040 DEBUG Importing PdfImagePlugin
+2026-03-13 01:56:27,050 DEBUG Importing PixarImagePlugin
+2026-03-13 01:56:27,052 DEBUG Importing PngImagePlugin
+2026-03-13 01:56:27,052 DEBUG Importing PpmImagePlugin
+2026-03-13 01:56:27,052 DEBUG Importing PsdImagePlugin
+2026-03-13 01:56:27,053 DEBUG Importing QoiImagePlugin
+2026-03-13 01:56:27,054 DEBUG Importing SgiImagePlugin
+2026-03-13 01:56:27,055 DEBUG Importing SpiderImagePlugin
+2026-03-13 01:56:27,056 DEBUG Importing SunImagePlugin
+2026-03-13 01:56:27,057 DEBUG Importing TgaImagePlugin
+2026-03-13 01:56:27,058 DEBUG Importing TiffImagePlugin
+2026-03-13 01:56:27,058 DEBUG Importing WebPImagePlugin
+2026-03-13 01:56:27,060 DEBUG Importing WmfImagePlugin
+2026-03-13 01:56:27,061 DEBUG Importing XbmImagePlugin
+2026-03-13 01:56:27,062 DEBUG Importing XpmImagePlugin
+2026-03-13 01:56:27,063 DEBUG Importing XVThumbImagePlugin
+2026-03-13 01:57:48,679 DEBUG デスクトップダブルクリック検出: (866, 550)
+2026-03-13 01:57:48,751 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 01:57:53,808 DEBUG デスクトップダブルクリック検出: (887, 583)
+2026-03-13 01:57:53,824 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 01:58:00,934 DEBUG デスクトップダブルクリック検出: (617, 456)
+2026-03-13 01:58:00,990 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 01:58:44,064 DEBUG デスクトップダブルクリック検出: (589, 641)
+2026-03-13 01:58:44,110 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:00:44,194 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:00:44,200 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:00:44,201 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:00:44,202 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:00:44,202 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:00:44,202 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:00:44,203 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:00:44,203 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:00:44,204 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:00:44,204 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:00:44,204 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:00:44,205 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:00:44,205 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:00:44,205 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:00:44,206 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:00:44,209 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:00:44,273 DEBUG Importing AvifImagePlugin
+2026-03-13 02:00:44,275 DEBUG Importing BlpImagePlugin
+2026-03-13 02:00:44,277 DEBUG Importing BmpImagePlugin
+2026-03-13 02:00:44,277 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:00:44,278 DEBUG Importing CurImagePlugin
+2026-03-13 02:00:44,279 DEBUG Importing DcxImagePlugin
+2026-03-13 02:00:44,280 DEBUG Importing DdsImagePlugin
+2026-03-13 02:00:44,285 DEBUG Importing EpsImagePlugin
+2026-03-13 02:00:44,286 DEBUG Importing FitsImagePlugin
+2026-03-13 02:00:44,289 DEBUG Importing FliImagePlugin
+2026-03-13 02:00:44,289 DEBUG Importing FpxImagePlugin
+2026-03-13 02:00:44,291 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:00:44,291 DEBUG Importing FtexImagePlugin
+2026-03-13 02:00:44,292 DEBUG Importing GbrImagePlugin
+2026-03-13 02:00:44,293 DEBUG Importing GifImagePlugin
+2026-03-13 02:00:44,294 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:00:44,295 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:00:44,296 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:00:44,298 DEBUG Importing IcoImagePlugin
+2026-03-13 02:00:44,301 DEBUG Importing ImImagePlugin
+2026-03-13 02:00:44,302 DEBUG Importing ImtImagePlugin
+2026-03-13 02:00:44,303 DEBUG Importing IptcImagePlugin
+2026-03-13 02:00:44,304 DEBUG Importing JpegImagePlugin
+2026-03-13 02:00:44,304 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:00:44,305 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:00:44,305 DEBUG Importing MicImagePlugin
+2026-03-13 02:00:44,307 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:00:44,308 DEBUG Importing MpegImagePlugin
+2026-03-13 02:00:44,308 DEBUG Importing MpoImagePlugin
+2026-03-13 02:00:44,311 DEBUG Importing MspImagePlugin
+2026-03-13 02:00:44,312 DEBUG Importing PalmImagePlugin
+2026-03-13 02:00:44,314 DEBUG Importing PcdImagePlugin
+2026-03-13 02:00:44,314 DEBUG Importing PcxImagePlugin
+2026-03-13 02:00:44,315 DEBUG Importing PdfImagePlugin
+2026-03-13 02:00:44,325 DEBUG Importing PixarImagePlugin
+2026-03-13 02:00:44,326 DEBUG Importing PngImagePlugin
+2026-03-13 02:00:44,327 DEBUG Importing PpmImagePlugin
+2026-03-13 02:00:44,327 DEBUG Importing PsdImagePlugin
+2026-03-13 02:00:44,328 DEBUG Importing QoiImagePlugin
+2026-03-13 02:00:44,329 DEBUG Importing SgiImagePlugin
+2026-03-13 02:00:44,330 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:00:44,330 DEBUG Importing SunImagePlugin
+2026-03-13 02:00:44,331 DEBUG Importing TgaImagePlugin
+2026-03-13 02:00:44,332 DEBUG Importing TiffImagePlugin
+2026-03-13 02:00:44,332 DEBUG Importing WebPImagePlugin
+2026-03-13 02:00:44,334 DEBUG Importing WmfImagePlugin
+2026-03-13 02:00:44,335 DEBUG Importing XbmImagePlugin
+2026-03-13 02:00:44,336 DEBUG Importing XpmImagePlugin
+2026-03-13 02:00:44,337 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:01:07,158 DEBUG デスクトップダブルクリック検出: (853, 828)
+2026-03-13 02:01:07,195 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:03:00,074 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:03:00,077 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:03:00,077 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:03:00,077 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:03:00,077 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:03:00,078 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:03:00,078 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:03:00,078 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:03:00,078 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:03:00,078 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:03:00,079 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:03:00,079 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:03:00,079 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:03:00,079 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:03:00,079 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:03:00,081 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:03:00,138 DEBUG Importing AvifImagePlugin
+2026-03-13 02:03:00,144 DEBUG Importing BlpImagePlugin
+2026-03-13 02:03:00,146 DEBUG Importing BmpImagePlugin
+2026-03-13 02:03:00,147 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:03:00,149 DEBUG Importing CurImagePlugin
+2026-03-13 02:03:00,151 DEBUG Importing DcxImagePlugin
+2026-03-13 02:03:00,153 DEBUG Importing DdsImagePlugin
+2026-03-13 02:03:00,158 DEBUG Importing EpsImagePlugin
+2026-03-13 02:03:00,159 DEBUG Importing FitsImagePlugin
+2026-03-13 02:03:00,161 DEBUG Importing FliImagePlugin
+2026-03-13 02:03:00,162 DEBUG Importing FpxImagePlugin
+2026-03-13 02:03:00,164 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:03:00,165 DEBUG Importing FtexImagePlugin
+2026-03-13 02:03:00,166 DEBUG Importing GbrImagePlugin
+2026-03-13 02:03:00,167 DEBUG Importing GifImagePlugin
+2026-03-13 02:03:00,167 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:03:00,168 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:03:00,168 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:03:00,170 DEBUG Importing IcoImagePlugin
+2026-03-13 02:03:00,171 DEBUG Importing ImImagePlugin
+2026-03-13 02:03:00,172 DEBUG Importing ImtImagePlugin
+2026-03-13 02:03:00,173 DEBUG Importing IptcImagePlugin
+2026-03-13 02:03:00,174 DEBUG Importing JpegImagePlugin
+2026-03-13 02:03:00,174 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:03:00,174 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:03:00,175 DEBUG Importing MicImagePlugin
+2026-03-13 02:03:00,177 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:03:00,177 DEBUG Importing MpegImagePlugin
+2026-03-13 02:03:00,178 DEBUG Importing MpoImagePlugin
+2026-03-13 02:03:00,181 DEBUG Importing MspImagePlugin
+2026-03-13 02:03:00,182 DEBUG Importing PalmImagePlugin
+2026-03-13 02:03:00,184 DEBUG Importing PcdImagePlugin
+2026-03-13 02:03:00,184 DEBUG Importing PcxImagePlugin
+2026-03-13 02:03:00,185 DEBUG Importing PdfImagePlugin
+2026-03-13 02:03:00,193 DEBUG Importing PixarImagePlugin
+2026-03-13 02:03:00,194 DEBUG Importing PngImagePlugin
+2026-03-13 02:03:00,194 DEBUG Importing PpmImagePlugin
+2026-03-13 02:03:00,194 DEBUG Importing PsdImagePlugin
+2026-03-13 02:03:00,195 DEBUG Importing QoiImagePlugin
+2026-03-13 02:03:00,195 DEBUG Importing SgiImagePlugin
+2026-03-13 02:03:00,196 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:03:00,197 DEBUG Importing SunImagePlugin
+2026-03-13 02:03:00,197 DEBUG Importing TgaImagePlugin
+2026-03-13 02:03:00,199 DEBUG Importing TiffImagePlugin
+2026-03-13 02:03:00,199 DEBUG Importing WebPImagePlugin
+2026-03-13 02:03:00,201 DEBUG Importing WmfImagePlugin
+2026-03-13 02:03:00,202 DEBUG Importing XbmImagePlugin
+2026-03-13 02:03:00,203 DEBUG Importing XpmImagePlugin
+2026-03-13 02:03:00,204 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:03:27,315 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:03:27,376 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:03:27,378 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:03:27,379 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:03:27,380 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:03:27,381 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:03:27,382 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:03:27,383 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:03:27,384 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:03:27,384 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:03:27,385 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:03:27,386 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:03:27,387 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:03:27,388 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:03:27,388 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:03:27,391 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:03:27,445 DEBUG Importing AvifImagePlugin
+2026-03-13 02:03:27,448 DEBUG Importing BlpImagePlugin
+2026-03-13 02:03:27,451 DEBUG Importing BmpImagePlugin
+2026-03-13 02:03:27,451 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:03:27,453 DEBUG Importing CurImagePlugin
+2026-03-13 02:03:27,454 DEBUG Importing DcxImagePlugin
+2026-03-13 02:03:27,456 DEBUG Importing DdsImagePlugin
+2026-03-13 02:03:27,461 DEBUG Importing EpsImagePlugin
+2026-03-13 02:03:27,463 DEBUG Importing FitsImagePlugin
+2026-03-13 02:03:27,468 DEBUG Importing FliImagePlugin
+2026-03-13 02:03:27,469 DEBUG Importing FpxImagePlugin
+2026-03-13 02:03:27,472 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:03:27,472 DEBUG Importing FtexImagePlugin
+2026-03-13 02:03:27,473 DEBUG Importing GbrImagePlugin
+2026-03-13 02:03:27,474 DEBUG Importing GifImagePlugin
+2026-03-13 02:03:27,474 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:03:27,475 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:03:27,476 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:03:27,478 DEBUG Importing IcoImagePlugin
+2026-03-13 02:03:27,480 DEBUG Importing ImImagePlugin
+2026-03-13 02:03:27,482 DEBUG Importing ImtImagePlugin
+2026-03-13 02:03:27,483 DEBUG Importing IptcImagePlugin
+2026-03-13 02:03:27,483 DEBUG Importing JpegImagePlugin
+2026-03-13 02:03:27,484 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:03:27,484 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:03:27,485 DEBUG Importing MicImagePlugin
+2026-03-13 02:03:27,487 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:03:27,487 DEBUG Importing MpegImagePlugin
+2026-03-13 02:03:27,488 DEBUG Importing MpoImagePlugin
+2026-03-13 02:03:27,490 DEBUG Importing MspImagePlugin
+2026-03-13 02:03:27,490 DEBUG Importing PalmImagePlugin
+2026-03-13 02:03:27,491 DEBUG Importing PcdImagePlugin
+2026-03-13 02:03:27,492 DEBUG Importing PcxImagePlugin
+2026-03-13 02:03:27,492 DEBUG Importing PdfImagePlugin
+2026-03-13 02:03:27,502 DEBUG Importing PixarImagePlugin
+2026-03-13 02:03:27,503 DEBUG Importing PngImagePlugin
+2026-03-13 02:03:27,504 DEBUG Importing PpmImagePlugin
+2026-03-13 02:03:27,504 DEBUG Importing PsdImagePlugin
+2026-03-13 02:03:27,505 DEBUG Importing QoiImagePlugin
+2026-03-13 02:03:27,506 DEBUG Importing SgiImagePlugin
+2026-03-13 02:03:27,506 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:03:27,507 DEBUG Importing SunImagePlugin
+2026-03-13 02:03:27,508 DEBUG Importing TgaImagePlugin
+2026-03-13 02:03:27,509 DEBUG Importing TiffImagePlugin
+2026-03-13 02:03:27,509 DEBUG Importing WebPImagePlugin
+2026-03-13 02:03:27,510 DEBUG Importing WmfImagePlugin
+2026-03-13 02:03:27,512 DEBUG Importing XbmImagePlugin
+2026-03-13 02:03:27,514 DEBUG Importing XpmImagePlugin
+2026-03-13 02:03:27,515 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:03:38,067 DEBUG デスクトップダブルクリック検出: (1379, 973)
+2026-03-13 02:03:38,119 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:03:43,862 DEBUG デスクトップダブルクリック検出: (1154, 853)
+2026-03-13 02:03:43,892 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:05:43,263 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:05:43,266 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:05:43,266 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:05:43,266 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:05:43,266 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:05:43,267 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:05:43,267 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:05:43,267 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:05:43,267 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:05:43,267 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:05:43,268 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:05:43,268 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:05:43,268 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:05:43,268 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:05:43,269 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:05:43,270 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:05:43,315 DEBUG Importing AvifImagePlugin
+2026-03-13 02:05:43,318 DEBUG Importing BlpImagePlugin
+2026-03-13 02:05:43,320 DEBUG Importing BmpImagePlugin
+2026-03-13 02:05:43,321 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:05:43,322 DEBUG Importing CurImagePlugin
+2026-03-13 02:05:43,323 DEBUG Importing DcxImagePlugin
+2026-03-13 02:05:43,325 DEBUG Importing DdsImagePlugin
+2026-03-13 02:05:43,330 DEBUG Importing EpsImagePlugin
+2026-03-13 02:05:43,331 DEBUG Importing FitsImagePlugin
+2026-03-13 02:05:43,334 DEBUG Importing FliImagePlugin
+2026-03-13 02:05:43,336 DEBUG Importing FpxImagePlugin
+2026-03-13 02:05:43,338 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:05:43,339 DEBUG Importing FtexImagePlugin
+2026-03-13 02:05:43,340 DEBUG Importing GbrImagePlugin
+2026-03-13 02:05:43,341 DEBUG Importing GifImagePlugin
+2026-03-13 02:05:43,341 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:05:43,342 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:05:43,343 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:05:43,346 DEBUG Importing IcoImagePlugin
+2026-03-13 02:05:43,347 DEBUG Importing ImImagePlugin
+2026-03-13 02:05:43,348 DEBUG Importing ImtImagePlugin
+2026-03-13 02:05:43,349 DEBUG Importing IptcImagePlugin
+2026-03-13 02:05:43,350 DEBUG Importing JpegImagePlugin
+2026-03-13 02:05:43,350 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:05:43,350 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:05:43,351 DEBUG Importing MicImagePlugin
+2026-03-13 02:05:43,352 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:05:43,353 DEBUG Importing MpegImagePlugin
+2026-03-13 02:05:43,353 DEBUG Importing MpoImagePlugin
+2026-03-13 02:05:43,355 DEBUG Importing MspImagePlugin
+2026-03-13 02:05:43,356 DEBUG Importing PalmImagePlugin
+2026-03-13 02:05:43,357 DEBUG Importing PcdImagePlugin
+2026-03-13 02:05:43,358 DEBUG Importing PcxImagePlugin
+2026-03-13 02:05:43,358 DEBUG Importing PdfImagePlugin
+2026-03-13 02:05:43,367 DEBUG Importing PixarImagePlugin
+2026-03-13 02:05:43,368 DEBUG Importing PngImagePlugin
+2026-03-13 02:05:43,368 DEBUG Importing PpmImagePlugin
+2026-03-13 02:05:43,368 DEBUG Importing PsdImagePlugin
+2026-03-13 02:05:43,369 DEBUG Importing QoiImagePlugin
+2026-03-13 02:05:43,370 DEBUG Importing SgiImagePlugin
+2026-03-13 02:05:43,371 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:05:43,371 DEBUG Importing SunImagePlugin
+2026-03-13 02:05:43,372 DEBUG Importing TgaImagePlugin
+2026-03-13 02:05:43,372 DEBUG Importing TiffImagePlugin
+2026-03-13 02:05:43,373 DEBUG Importing WebPImagePlugin
+2026-03-13 02:05:43,374 DEBUG Importing WmfImagePlugin
+2026-03-13 02:05:43,375 DEBUG Importing XbmImagePlugin
+2026-03-13 02:05:43,376 DEBUG Importing XpmImagePlugin
+2026-03-13 02:05:43,377 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:05:53,066 DEBUG デスクトップダブルクリック検出: (1171, 902)
+2026-03-13 02:05:53,109 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:05:56,453 DEBUG _sync_keyboards開始: WT=2, KB=0
+2026-03-13 02:05:56,454 DEBUG キーボード起動: 現在KB=0, 目標WT=2
+2026-03-13 02:05:59,579 DEBUG キーボード起動: 現在KB=0, 目標WT=2
+2026-03-13 02:06:02,652 DEBUG キーボード起動: 現在KB=0, 目標WT=2
+2026-03-13 02:06:05,732 DEBUG キーボード起動: 現在KB=0, 目標WT=2
+2026-03-13 02:06:06,151 DEBUG キーボード検出: 0→1
+2026-03-13 02:06:06,153 DEBUG キーボード起動: 現在KB=1, 目標WT=2
+2026-03-13 02:06:08,245 DEBUG キーボード検出: 1→2
+2026-03-13 02:06:08,250 DEBUG _sync_keyboards完了: WT=2, KB=2
+2026-03-13 02:07:04,832 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:07:04,836 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:07:04,836 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:07:04,836 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:07:04,837 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:07:04,837 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:07:04,837 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:07:04,837 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:07:04,837 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:07:04,838 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:07:04,838 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:07:04,838 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:07:04,838 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:07:04,839 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:07:04,839 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:07:04,842 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:07:04,898 DEBUG Importing AvifImagePlugin
+2026-03-13 02:07:04,901 DEBUG Importing BlpImagePlugin
+2026-03-13 02:07:04,903 DEBUG Importing BmpImagePlugin
+2026-03-13 02:07:04,903 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:07:04,904 DEBUG Importing CurImagePlugin
+2026-03-13 02:07:04,905 DEBUG Importing DcxImagePlugin
+2026-03-13 02:07:04,906 DEBUG Importing DdsImagePlugin
+2026-03-13 02:07:04,910 DEBUG Importing EpsImagePlugin
+2026-03-13 02:07:04,911 DEBUG Importing FitsImagePlugin
+2026-03-13 02:07:04,914 DEBUG Importing FliImagePlugin
+2026-03-13 02:07:04,915 DEBUG Importing FpxImagePlugin
+2026-03-13 02:07:04,917 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:07:04,917 DEBUG Importing FtexImagePlugin
+2026-03-13 02:07:04,919 DEBUG Importing GbrImagePlugin
+2026-03-13 02:07:04,920 DEBUG Importing GifImagePlugin
+2026-03-13 02:07:04,920 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:07:04,921 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:07:04,921 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:07:04,923 DEBUG Importing IcoImagePlugin
+2026-03-13 02:07:04,925 DEBUG Importing ImImagePlugin
+2026-03-13 02:07:04,927 DEBUG Importing ImtImagePlugin
+2026-03-13 02:07:04,927 DEBUG Importing IptcImagePlugin
+2026-03-13 02:07:04,928 DEBUG Importing JpegImagePlugin
+2026-03-13 02:07:04,929 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:07:04,929 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:07:04,929 DEBUG Importing MicImagePlugin
+2026-03-13 02:07:04,931 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:07:04,932 DEBUG Importing MpegImagePlugin
+2026-03-13 02:07:04,933 DEBUG Importing MpoImagePlugin
+2026-03-13 02:07:04,936 DEBUG Importing MspImagePlugin
+2026-03-13 02:07:04,937 DEBUG Importing PalmImagePlugin
+2026-03-13 02:07:04,938 DEBUG Importing PcdImagePlugin
+2026-03-13 02:07:04,939 DEBUG Importing PcxImagePlugin
+2026-03-13 02:07:04,939 DEBUG Importing PdfImagePlugin
+2026-03-13 02:07:04,951 DEBUG Importing PixarImagePlugin
+2026-03-13 02:07:04,953 DEBUG Importing PngImagePlugin
+2026-03-13 02:07:04,953 DEBUG Importing PpmImagePlugin
+2026-03-13 02:07:04,954 DEBUG Importing PsdImagePlugin
+2026-03-13 02:07:04,955 DEBUG Importing QoiImagePlugin
+2026-03-13 02:07:04,955 DEBUG Importing SgiImagePlugin
+2026-03-13 02:07:04,956 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:07:04,957 DEBUG Importing SunImagePlugin
+2026-03-13 02:07:04,957 DEBUG Importing TgaImagePlugin
+2026-03-13 02:07:04,958 DEBUG Importing TiffImagePlugin
+2026-03-13 02:07:04,958 DEBUG Importing WebPImagePlugin
+2026-03-13 02:07:04,960 DEBUG Importing WmfImagePlugin
+2026-03-13 02:07:04,961 DEBUG Importing XbmImagePlugin
+2026-03-13 02:07:04,962 DEBUG Importing XpmImagePlugin
+2026-03-13 02:07:04,963 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:13:57,442 DEBUG デスクトップダブルクリック検出: (959, 769)
+2026-03-13 02:13:57,467 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:14:00,207 DEBUG _sync_keyboards開始: WT=2, KB=0
+2026-03-13 02:14:00,208 DEBUG キーボード2個起動
+2026-03-13 02:14:09,982 DEBUG キーボード全数検出: KB=2
+2026-03-13 02:14:09,987 DEBUG _sync_keyboards完了: WT=2, KB=2
+2026-03-13 02:14:59,034 DEBUG デスクトップダブルクリック検出: (1078, 310)
+2026-03-13 02:14:59,056 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:15:02,271 DEBUG _sync_keyboards開始: WT=2, KB=1
+2026-03-13 02:15:02,272 DEBUG キーボード1個起動
+2026-03-13 02:15:38,237 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:15:38,240 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:15:38,240 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:15:38,241 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:15:38,241 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:15:38,241 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:15:38,242 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:15:38,242 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:15:38,242 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:15:38,242 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:15:38,242 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:15:38,243 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:15:38,243 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:15:38,243 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:15:38,243 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:15:38,245 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:15:38,281 DEBUG Importing AvifImagePlugin
+2026-03-13 02:15:38,283 DEBUG Importing BlpImagePlugin
+2026-03-13 02:15:38,286 DEBUG Importing BmpImagePlugin
+2026-03-13 02:15:38,286 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:15:38,287 DEBUG Importing CurImagePlugin
+2026-03-13 02:15:38,287 DEBUG Importing DcxImagePlugin
+2026-03-13 02:15:38,289 DEBUG Importing DdsImagePlugin
+2026-03-13 02:15:38,293 DEBUG Importing EpsImagePlugin
+2026-03-13 02:15:38,294 DEBUG Importing FitsImagePlugin
+2026-03-13 02:15:38,296 DEBUG Importing FliImagePlugin
+2026-03-13 02:15:38,297 DEBUG Importing FpxImagePlugin
+2026-03-13 02:15:38,300 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:15:38,300 DEBUG Importing FtexImagePlugin
+2026-03-13 02:15:38,301 DEBUG Importing GbrImagePlugin
+2026-03-13 02:15:38,302 DEBUG Importing GifImagePlugin
+2026-03-13 02:15:38,303 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:15:38,303 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:15:38,304 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:15:38,306 DEBUG Importing IcoImagePlugin
+2026-03-13 02:15:38,308 DEBUG Importing ImImagePlugin
+2026-03-13 02:15:38,309 DEBUG Importing ImtImagePlugin
+2026-03-13 02:15:38,310 DEBUG Importing IptcImagePlugin
+2026-03-13 02:15:38,311 DEBUG Importing JpegImagePlugin
+2026-03-13 02:15:38,311 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:15:38,311 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:15:38,312 DEBUG Importing MicImagePlugin
+2026-03-13 02:15:38,314 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:15:38,314 DEBUG Importing MpegImagePlugin
+2026-03-13 02:15:38,315 DEBUG Importing MpoImagePlugin
+2026-03-13 02:15:38,318 DEBUG Importing MspImagePlugin
+2026-03-13 02:15:38,319 DEBUG Importing PalmImagePlugin
+2026-03-13 02:15:38,321 DEBUG Importing PcdImagePlugin
+2026-03-13 02:15:38,321 DEBUG Importing PcxImagePlugin
+2026-03-13 02:15:38,322 DEBUG Importing PdfImagePlugin
+2026-03-13 02:15:38,328 DEBUG Importing PixarImagePlugin
+2026-03-13 02:15:38,329 DEBUG Importing PngImagePlugin
+2026-03-13 02:15:38,329 DEBUG Importing PpmImagePlugin
+2026-03-13 02:15:38,330 DEBUG Importing PsdImagePlugin
+2026-03-13 02:15:38,330 DEBUG Importing QoiImagePlugin
+2026-03-13 02:15:38,331 DEBUG Importing SgiImagePlugin
+2026-03-13 02:15:38,332 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:15:38,333 DEBUG Importing SunImagePlugin
+2026-03-13 02:15:38,335 DEBUG Importing TgaImagePlugin
+2026-03-13 02:15:38,336 DEBUG Importing TiffImagePlugin
+2026-03-13 02:15:38,336 DEBUG Importing WebPImagePlugin
+2026-03-13 02:15:38,338 DEBUG Importing WmfImagePlugin
+2026-03-13 02:15:38,339 DEBUG Importing XbmImagePlugin
+2026-03-13 02:15:38,340 DEBUG Importing XpmImagePlugin
+2026-03-13 02:15:38,341 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:15:42,397 DEBUG デスクトップダブルクリック検出: (855, 651)
+2026-03-13 02:15:42,436 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:15:46,314 DEBUG _sync_keyboards開始: WT=2, KB=1
+2026-03-13 02:15:46,314 DEBUG キーボード1個起動
+2026-03-13 02:15:55,066 DEBUG キーボード全数検出: KB=2
+2026-03-13 02:15:55,150 DEBUG _sync_keyboards完了: WT=2, KB=2
+2026-03-13 02:16:27,108 DEBUG デスクトップダブルクリック検出: (1071, 572)
+2026-03-13 02:16:27,140 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:16:29,382 DEBUG _sync_keyboards開始: WT=2, KB=0
+2026-03-13 02:16:29,383 DEBUG キーボード2個起動
+2026-03-13 02:16:39,548 DEBUG キーボード全数検出: KB=2
+2026-03-13 02:16:39,555 DEBUG _sync_keyboards完了: WT=2, KB=2
+2026-03-13 02:19:15,348 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:19:15,350 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:19:15,350 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:19:15,351 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:19:15,351 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:19:15,351 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:19:15,351 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:19:15,352 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:19:15,352 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:19:15,352 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:19:15,352 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:19:15,352 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:19:15,353 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:19:15,353 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:19:15,353 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:19:15,355 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:19:15,408 DEBUG Importing AvifImagePlugin
+2026-03-13 02:19:15,411 DEBUG Importing BlpImagePlugin
+2026-03-13 02:19:15,413 DEBUG Importing BmpImagePlugin
+2026-03-13 02:19:15,413 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:19:15,415 DEBUG Importing CurImagePlugin
+2026-03-13 02:19:15,416 DEBUG Importing DcxImagePlugin
+2026-03-13 02:19:15,417 DEBUG Importing DdsImagePlugin
+2026-03-13 02:19:15,425 DEBUG Importing EpsImagePlugin
+2026-03-13 02:19:15,426 DEBUG Importing FitsImagePlugin
+2026-03-13 02:19:15,430 DEBUG Importing FliImagePlugin
+2026-03-13 02:19:15,431 DEBUG Importing FpxImagePlugin
+2026-03-13 02:19:15,433 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:19:15,434 DEBUG Importing FtexImagePlugin
+2026-03-13 02:19:15,434 DEBUG Importing GbrImagePlugin
+2026-03-13 02:19:15,435 DEBUG Importing GifImagePlugin
+2026-03-13 02:19:15,435 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:19:15,436 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:19:15,437 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:19:15,439 DEBUG Importing IcoImagePlugin
+2026-03-13 02:19:15,441 DEBUG Importing ImImagePlugin
+2026-03-13 02:19:15,442 DEBUG Importing ImtImagePlugin
+2026-03-13 02:19:15,443 DEBUG Importing IptcImagePlugin
+2026-03-13 02:19:15,443 DEBUG Importing JpegImagePlugin
+2026-03-13 02:19:15,444 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:19:15,444 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:19:15,444 DEBUG Importing MicImagePlugin
+2026-03-13 02:19:15,446 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:19:15,447 DEBUG Importing MpegImagePlugin
+2026-03-13 02:19:15,447 DEBUG Importing MpoImagePlugin
+2026-03-13 02:19:15,449 DEBUG Importing MspImagePlugin
+2026-03-13 02:19:15,450 DEBUG Importing PalmImagePlugin
+2026-03-13 02:19:15,451 DEBUG Importing PcdImagePlugin
+2026-03-13 02:19:15,452 DEBUG Importing PcxImagePlugin
+2026-03-13 02:19:15,452 DEBUG Importing PdfImagePlugin
+2026-03-13 02:19:15,464 DEBUG Importing PixarImagePlugin
+2026-03-13 02:19:15,465 DEBUG Importing PngImagePlugin
+2026-03-13 02:19:15,465 DEBUG Importing PpmImagePlugin
+2026-03-13 02:19:15,466 DEBUG Importing PsdImagePlugin
+2026-03-13 02:19:15,466 DEBUG Importing QoiImagePlugin
+2026-03-13 02:19:15,467 DEBUG Importing SgiImagePlugin
+2026-03-13 02:19:15,468 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:19:15,469 DEBUG Importing SunImagePlugin
+2026-03-13 02:19:15,470 DEBUG Importing TgaImagePlugin
+2026-03-13 02:19:15,471 DEBUG Importing TiffImagePlugin
+2026-03-13 02:19:15,471 DEBUG Importing WebPImagePlugin
+2026-03-13 02:19:15,473 DEBUG Importing WmfImagePlugin
+2026-03-13 02:19:15,474 DEBUG Importing XbmImagePlugin
+2026-03-13 02:19:15,475 DEBUG Importing XpmImagePlugin
+2026-03-13 02:19:15,476 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:19:35,401 DEBUG デスクトップダブルクリック検出: (1105, 861)
+2026-03-13 02:19:35,429 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:19:39,183 DEBUG _sync_keyboards開始: WT=2, KB=0
+2026-03-13 02:19:39,184 DEBUG キーボード2個起動
+2026-03-13 02:19:50,180 DEBUG キーボード全数検出: KB=2
+2026-03-13 02:19:50,187 DEBUG _sync_keyboards完了: WT=2, KB=2
+2026-03-13 02:21:43,788 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:21:43,790 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:21:43,791 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:21:43,791 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:21:43,791 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:21:43,791 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:21:43,791 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:21:43,792 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:21:43,792 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:21:43,792 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:21:43,792 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:21:43,792 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:21:43,793 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:21:43,793 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:21:43,793 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:21:43,796 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:21:43,866 DEBUG Importing AvifImagePlugin
+2026-03-13 02:21:43,869 DEBUG Importing BlpImagePlugin
+2026-03-13 02:21:43,877 DEBUG Importing BmpImagePlugin
+2026-03-13 02:21:43,877 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:21:43,878 DEBUG Importing CurImagePlugin
+2026-03-13 02:21:43,880 DEBUG Importing DcxImagePlugin
+2026-03-13 02:21:43,882 DEBUG Importing DdsImagePlugin
+2026-03-13 02:21:43,889 DEBUG Importing EpsImagePlugin
+2026-03-13 02:21:43,891 DEBUG Importing FitsImagePlugin
+2026-03-13 02:21:43,894 DEBUG Importing FliImagePlugin
+2026-03-13 02:21:43,895 DEBUG Importing FpxImagePlugin
+2026-03-13 02:21:43,898 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:21:43,899 DEBUG Importing FtexImagePlugin
+2026-03-13 02:21:43,900 DEBUG Importing GbrImagePlugin
+2026-03-13 02:21:43,901 DEBUG Importing GifImagePlugin
+2026-03-13 02:21:43,902 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:21:43,903 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:21:43,906 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:21:43,909 DEBUG Importing IcoImagePlugin
+2026-03-13 02:21:43,911 DEBUG Importing ImImagePlugin
+2026-03-13 02:21:43,912 DEBUG Importing ImtImagePlugin
+2026-03-13 02:21:43,914 DEBUG Importing IptcImagePlugin
+2026-03-13 02:21:43,915 DEBUG Importing JpegImagePlugin
+2026-03-13 02:21:43,915 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:21:43,916 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:21:43,916 DEBUG Importing MicImagePlugin
+2026-03-13 02:21:43,922 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:21:43,922 DEBUG Importing MpegImagePlugin
+2026-03-13 02:21:43,924 DEBUG Importing MpoImagePlugin
+2026-03-13 02:21:43,928 DEBUG Importing MspImagePlugin
+2026-03-13 02:21:43,930 DEBUG Importing PalmImagePlugin
+2026-03-13 02:21:43,931 DEBUG Importing PcdImagePlugin
+2026-03-13 02:21:43,932 DEBUG Importing PcxImagePlugin
+2026-03-13 02:21:43,933 DEBUG Importing PdfImagePlugin
+2026-03-13 02:21:43,950 DEBUG Importing PixarImagePlugin
+2026-03-13 02:21:43,952 DEBUG Importing PngImagePlugin
+2026-03-13 02:21:43,954 DEBUG Importing PpmImagePlugin
+2026-03-13 02:21:43,954 DEBUG Importing PsdImagePlugin
+2026-03-13 02:21:43,956 DEBUG Importing QoiImagePlugin
+2026-03-13 02:21:43,957 DEBUG Importing SgiImagePlugin
+2026-03-13 02:21:43,958 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:21:43,961 DEBUG Importing SunImagePlugin
+2026-03-13 02:21:43,963 DEBUG Importing TgaImagePlugin
+2026-03-13 02:21:43,964 DEBUG Importing TiffImagePlugin
+2026-03-13 02:21:43,964 DEBUG Importing WebPImagePlugin
+2026-03-13 02:21:43,967 DEBUG Importing WmfImagePlugin
+2026-03-13 02:21:43,968 DEBUG Importing XbmImagePlugin
+2026-03-13 02:21:43,970 DEBUG Importing XpmImagePlugin
+2026-03-13 02:21:43,971 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:50:42,813 DEBUG デスクトップダブルクリック検出: (918, 671)
+2026-03-13 02:50:42,847 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:50:45,402 DEBUG キーボード同期: 現在0個, 目標2個, 起動2個
+2026-03-13 02:50:56,733 DEBUG キーボード同期完了: 2個
+2026-03-13 02:53:22,390 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:53:22,392 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:53:22,393 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:53:22,393 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:53:22,394 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:53:22,394 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:53:22,394 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:53:22,394 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:53:22,395 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:53:22,395 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:53:22,395 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:53:22,396 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:53:22,396 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:53:22,397 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:53:22,397 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:53:22,400 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:53:22,465 DEBUG Importing AvifImagePlugin
+2026-03-13 02:53:22,467 DEBUG Importing BlpImagePlugin
+2026-03-13 02:53:22,468 DEBUG Importing BmpImagePlugin
+2026-03-13 02:53:22,469 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:53:22,470 DEBUG Importing CurImagePlugin
+2026-03-13 02:53:22,477 DEBUG Importing DcxImagePlugin
+2026-03-13 02:53:22,481 DEBUG Importing DdsImagePlugin
+2026-03-13 02:53:22,486 DEBUG Importing EpsImagePlugin
+2026-03-13 02:53:22,489 DEBUG Importing FitsImagePlugin
+2026-03-13 02:53:22,496 DEBUG Importing FliImagePlugin
+2026-03-13 02:53:22,500 DEBUG Importing FpxImagePlugin
+2026-03-13 02:53:22,504 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:53:22,505 DEBUG Importing FtexImagePlugin
+2026-03-13 02:53:22,506 DEBUG Importing GbrImagePlugin
+2026-03-13 02:53:22,507 DEBUG Importing GifImagePlugin
+2026-03-13 02:53:22,508 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:53:22,508 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:53:22,509 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:53:22,511 DEBUG Importing IcoImagePlugin
+2026-03-13 02:53:22,512 DEBUG Importing ImImagePlugin
+2026-03-13 02:53:22,513 DEBUG Importing ImtImagePlugin
+2026-03-13 02:53:22,513 DEBUG Importing IptcImagePlugin
+2026-03-13 02:53:22,514 DEBUG Importing JpegImagePlugin
+2026-03-13 02:53:22,514 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:53:22,515 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:53:22,515 DEBUG Importing MicImagePlugin
+2026-03-13 02:53:22,518 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:53:22,518 DEBUG Importing MpegImagePlugin
+2026-03-13 02:53:22,520 DEBUG Importing MpoImagePlugin
+2026-03-13 02:53:22,523 DEBUG Importing MspImagePlugin
+2026-03-13 02:53:22,524 DEBUG Importing PalmImagePlugin
+2026-03-13 02:53:22,525 DEBUG Importing PcdImagePlugin
+2026-03-13 02:53:22,526 DEBUG Importing PcxImagePlugin
+2026-03-13 02:53:22,526 DEBUG Importing PdfImagePlugin
+2026-03-13 02:53:22,536 DEBUG Importing PixarImagePlugin
+2026-03-13 02:53:22,537 DEBUG Importing PngImagePlugin
+2026-03-13 02:53:22,538 DEBUG Importing PpmImagePlugin
+2026-03-13 02:53:22,539 DEBUG Importing PsdImagePlugin
+2026-03-13 02:53:22,540 DEBUG Importing QoiImagePlugin
+2026-03-13 02:53:22,541 DEBUG Importing SgiImagePlugin
+2026-03-13 02:53:22,542 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:53:22,543 DEBUG Importing SunImagePlugin
+2026-03-13 02:53:22,544 DEBUG Importing TgaImagePlugin
+2026-03-13 02:53:22,544 DEBUG Importing TiffImagePlugin
+2026-03-13 02:53:22,545 DEBUG Importing WebPImagePlugin
+2026-03-13 02:53:22,547 DEBUG Importing WmfImagePlugin
+2026-03-13 02:53:22,548 DEBUG Importing XbmImagePlugin
+2026-03-13 02:53:22,549 DEBUG Importing XpmImagePlugin
+2026-03-13 02:53:22,551 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:53:39,145 DEBUG デスクトップダブルクリック検出: (1081, 190)
+2026-03-13 02:53:39,196 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:53:41,941 DEBUG キーボード同期: 現在0個, 目標2個, 起動2個
+2026-03-13 02:53:52,306 DEBUG キーボード同期完了: 2個
+2026-03-13 02:54:14,886 DEBUG デスクトップダブルクリック検出: (1015, 909)
+2026-03-13 02:54:14,925 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:54:19,674 DEBUG キーボード同期: 現在0個, 目標2個, 起動2個
+2026-03-13 02:54:30,174 DEBUG キーボード同期完了: 2個
+2026-03-13 02:58:06,636 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:58:06,640 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 02:58:06,640 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 02:58:06,641 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 02:58:06,641 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 02:58:06,641 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 02:58:06,641 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 02:58:06,642 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 02:58:06,642 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 02:58:06,642 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 02:58:06,642 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 02:58:06,643 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 02:58:06,643 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 02:58:06,643 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 02:58:06,643 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 02:58:06,645 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 02:58:06,701 DEBUG Importing AvifImagePlugin
+2026-03-13 02:58:06,704 DEBUG Importing BlpImagePlugin
+2026-03-13 02:58:06,706 DEBUG Importing BmpImagePlugin
+2026-03-13 02:58:06,707 DEBUG Importing BufrStubImagePlugin
+2026-03-13 02:58:06,708 DEBUG Importing CurImagePlugin
+2026-03-13 02:58:06,709 DEBUG Importing DcxImagePlugin
+2026-03-13 02:58:06,711 DEBUG Importing DdsImagePlugin
+2026-03-13 02:58:06,717 DEBUG Importing EpsImagePlugin
+2026-03-13 02:58:06,719 DEBUG Importing FitsImagePlugin
+2026-03-13 02:58:06,723 DEBUG Importing FliImagePlugin
+2026-03-13 02:58:06,724 DEBUG Importing FpxImagePlugin
+2026-03-13 02:58:06,727 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 02:58:06,728 DEBUG Importing FtexImagePlugin
+2026-03-13 02:58:06,729 DEBUG Importing GbrImagePlugin
+2026-03-13 02:58:06,730 DEBUG Importing GifImagePlugin
+2026-03-13 02:58:06,731 DEBUG Importing GribStubImagePlugin
+2026-03-13 02:58:06,731 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 02:58:06,732 DEBUG Importing IcnsImagePlugin
+2026-03-13 02:58:06,734 DEBUG Importing IcoImagePlugin
+2026-03-13 02:58:06,736 DEBUG Importing ImImagePlugin
+2026-03-13 02:58:06,737 DEBUG Importing ImtImagePlugin
+2026-03-13 02:58:06,738 DEBUG Importing IptcImagePlugin
+2026-03-13 02:58:06,739 DEBUG Importing JpegImagePlugin
+2026-03-13 02:58:06,739 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 02:58:06,739 DEBUG Importing McIdasImagePlugin
+2026-03-13 02:58:06,740 DEBUG Importing MicImagePlugin
+2026-03-13 02:58:06,742 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 02:58:06,742 DEBUG Importing MpegImagePlugin
+2026-03-13 02:58:06,743 DEBUG Importing MpoImagePlugin
+2026-03-13 02:58:06,745 DEBUG Importing MspImagePlugin
+2026-03-13 02:58:06,746 DEBUG Importing PalmImagePlugin
+2026-03-13 02:58:06,747 DEBUG Importing PcdImagePlugin
+2026-03-13 02:58:06,747 DEBUG Importing PcxImagePlugin
+2026-03-13 02:58:06,748 DEBUG Importing PdfImagePlugin
+2026-03-13 02:58:06,756 DEBUG Importing PixarImagePlugin
+2026-03-13 02:58:06,758 DEBUG Importing PngImagePlugin
+2026-03-13 02:58:06,758 DEBUG Importing PpmImagePlugin
+2026-03-13 02:58:06,758 DEBUG Importing PsdImagePlugin
+2026-03-13 02:58:06,759 DEBUG Importing QoiImagePlugin
+2026-03-13 02:58:06,759 DEBUG Importing SgiImagePlugin
+2026-03-13 02:58:06,760 DEBUG Importing SpiderImagePlugin
+2026-03-13 02:58:06,761 DEBUG Importing SunImagePlugin
+2026-03-13 02:58:06,761 DEBUG Importing TgaImagePlugin
+2026-03-13 02:58:06,762 DEBUG Importing TiffImagePlugin
+2026-03-13 02:58:06,762 DEBUG Importing WebPImagePlugin
+2026-03-13 02:58:06,764 DEBUG Importing WmfImagePlugin
+2026-03-13 02:58:06,765 DEBUG Importing XbmImagePlugin
+2026-03-13 02:58:06,766 DEBUG Importing XpmImagePlugin
+2026-03-13 02:58:06,767 DEBUG Importing XVThumbImagePlugin
+2026-03-13 02:59:52,826 DEBUG デスクトップダブルクリック検出: (920, 544)
+2026-03-13 02:59:52,871 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 02:59:55,205 DEBUG キーボード同期: 現在0個, 目標2個, 起動2個
+2026-03-13 03:00:04,690 DEBUG キーボード同期完了: 2個
+2026-03-13 03:00:33,850 DEBUG デスクトップダブルクリック検出: (1051, 594)
+2026-03-13 03:00:33,870 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:00:36,468 DEBUG キーボード同期: 現在0個, 目標2個, 起動2個
+2026-03-13 03:00:46,227 DEBUG キーボード同期完了: 2個
+2026-03-13 03:10:49,738 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:10:49,740 DEBUG メニュー項目追加(apps): 'Chat'
+2026-03-13 03:10:49,741 DEBUG メニュー項目追加(apps): 'Data_Share'
+2026-03-13 03:10:49,741 DEBUG メニュー項目追加(apps): 'everyWEAR'
+2026-03-13 03:10:49,741 DEBUG メニュー項目追加(apps): 'HardReminder'
+2026-03-13 03:10:49,742 DEBUG メニュー項目追加(apps): 'Homework_Rescue'
+2026-03-13 03:10:49,742 DEBUG メニュー項目追加(apps): 'iphone_memo_book'
+2026-03-13 03:10:49,742 DEBUG メニュー項目追加(apps): 'iphoneリマインダー'
+2026-03-13 03:10:49,742 DEBUG メニュー項目追加(apps): 'KANJI_HANTEI'
+2026-03-13 03:10:49,742 DEBUG メニュー項目追加(apps): 'Kanji_Stroke'
+2026-03-13 03:10:49,743 DEBUG メニュー項目追加(apps): 'terminal_copy'
+2026-03-13 03:10:49,743 DEBUG メニュー項目追加(apps): '透明キーボード'
+2026-03-13 03:10:49,743 DEBUG メニュー項目追加(other): 'amazon_auto'
+2026-03-13 03:10:49,743 DEBUG メニュー項目追加(other): '小学校関連_auto'
+2026-03-13 03:10:49,743 DEBUG メニュー項目追加(other): '請求書印刷_auto'
+2026-03-13 03:10:49,748 DEBUG デスクトップダブルクリック検出フック設定完了
+2026-03-13 03:10:49,778 DEBUG Importing AvifImagePlugin
+2026-03-13 03:10:49,781 DEBUG Importing BlpImagePlugin
+2026-03-13 03:10:49,783 DEBUG Importing BmpImagePlugin
+2026-03-13 03:10:49,784 DEBUG Importing BufrStubImagePlugin
+2026-03-13 03:10:49,792 DEBUG Importing CurImagePlugin
+2026-03-13 03:10:49,796 DEBUG Importing DcxImagePlugin
+2026-03-13 03:10:49,808 DEBUG Importing DdsImagePlugin
+2026-03-13 03:10:49,813 DEBUG Importing EpsImagePlugin
+2026-03-13 03:10:49,814 DEBUG Importing FitsImagePlugin
+2026-03-13 03:10:49,818 DEBUG Importing FliImagePlugin
+2026-03-13 03:10:49,821 DEBUG Importing FpxImagePlugin
+2026-03-13 03:10:49,824 DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+2026-03-13 03:10:49,825 DEBUG Importing FtexImagePlugin
+2026-03-13 03:10:49,826 DEBUG Importing GbrImagePlugin
+2026-03-13 03:10:49,827 DEBUG Importing GifImagePlugin
+2026-03-13 03:10:49,827 DEBUG Importing GribStubImagePlugin
+2026-03-13 03:10:49,828 DEBUG Importing Hdf5StubImagePlugin
+2026-03-13 03:10:49,829 DEBUG Importing IcnsImagePlugin
+2026-03-13 03:10:49,832 DEBUG Importing IcoImagePlugin
+2026-03-13 03:10:49,833 DEBUG Importing ImImagePlugin
+2026-03-13 03:10:49,836 DEBUG Importing ImtImagePlugin
+2026-03-13 03:10:49,837 DEBUG Importing IptcImagePlugin
+2026-03-13 03:10:49,838 DEBUG Importing JpegImagePlugin
+2026-03-13 03:10:49,839 DEBUG Importing Jpeg2KImagePlugin
+2026-03-13 03:10:49,839 DEBUG Importing McIdasImagePlugin
+2026-03-13 03:10:49,840 DEBUG Importing MicImagePlugin
+2026-03-13 03:10:49,841 DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+2026-03-13 03:10:49,842 DEBUG Importing MpegImagePlugin
+2026-03-13 03:10:49,842 DEBUG Importing MpoImagePlugin
+2026-03-13 03:10:49,845 DEBUG Importing MspImagePlugin
+2026-03-13 03:10:49,846 DEBUG Importing PalmImagePlugin
+2026-03-13 03:10:49,847 DEBUG Importing PcdImagePlugin
+2026-03-13 03:10:49,847 DEBUG Importing PcxImagePlugin
+2026-03-13 03:10:49,848 DEBUG Importing PdfImagePlugin
+2026-03-13 03:10:49,857 DEBUG Importing PixarImagePlugin
+2026-03-13 03:10:49,858 DEBUG Importing PngImagePlugin
+2026-03-13 03:10:49,858 DEBUG Importing PpmImagePlugin
+2026-03-13 03:10:49,859 DEBUG Importing PsdImagePlugin
+2026-03-13 03:10:49,859 DEBUG Importing QoiImagePlugin
+2026-03-13 03:10:49,860 DEBUG Importing SgiImagePlugin
+2026-03-13 03:10:49,861 DEBUG Importing SpiderImagePlugin
+2026-03-13 03:10:49,861 DEBUG Importing SunImagePlugin
+2026-03-13 03:10:49,862 DEBUG Importing TgaImagePlugin
+2026-03-13 03:10:49,863 DEBUG Importing TiffImagePlugin
+2026-03-13 03:10:49,863 DEBUG Importing WebPImagePlugin
+2026-03-13 03:10:49,864 DEBUG Importing WmfImagePlugin
+2026-03-13 03:10:49,865 DEBUG Importing XbmImagePlugin
+2026-03-13 03:10:49,867 DEBUG Importing XpmImagePlugin
+2026-03-13 03:10:49,869 DEBUG Importing XVThumbImagePlugin
+2026-03-13 03:10:58,805 DEBUG WT数変化検出: WT=1, KB=2 → KB削減
+2026-03-13 03:11:02,380 DEBUG デスクトップダブルクリック検出: (1023, 435)
+2026-03-13 03:11:02,435 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:11:04,715 DEBUG キーボード同期: 現在1個, 目標2個, 起動1個
+2026-03-13 03:11:12,422 DEBUG キーボード同期完了: 2個
+2026-03-13 03:11:19,893 DEBUG WT数変化検出: WT=1, KB=2 → KB削減
+2026-03-13 03:11:26,939 DEBUG デスクトップダブルクリック検出: (877, 675)
+2026-03-13 03:11:26,978 DEBUG get_folders: apps=11件, other=3件
+2026-03-13 03:11:28,933 DEBUG WT数変化検出: WT=0, KB=1 → KB削減
+2026-03-13 03:11:31,105 DEBUG キーボード同期: 現在0個, 目標1個, 起動1個
+2026-03-13 03:11:39,743 DEBUG キーボード同期完了: 1個

@@ -474,6 +474,23 @@ class App:
             lambda x, y: self.root.after(0, lambda: self._show_popup_menu(x, y))
         )
         self._detector.start()
+        # WT数監視（3秒ごと、KBが多ければ閉じて再整列）
+        self._last_wt_count = len(_find_wt_windows())
+        self._poll_wt()
+
+    def _poll_wt(self):
+        """3秒ごとにWT数を監視、減ったらKBも減らして再整列"""
+        n_wt = len(_find_wt_windows())
+        n_kb = len(_find_kb_windows())
+        if n_wt != self._last_wt_count and n_kb > n_wt:
+            logging.debug(f"WT数変化検出: WT={n_wt}, KB={n_kb} → KB削減")
+            kb_hwnds = _find_kb_windows()
+            for i in range(n_kb - n_wt):
+                _close_one_keyboard(kb_hwnds[-(i + 1)])
+            # 少し待ってから再整列（閉じるアニメーション分）
+            self.root.after(300, _reposition_windows)
+        self._last_wt_count = n_wt
+        self.root.after(3000, self._poll_wt)
 
     def _open_single(self, folder_name):
         """シングル起動: 既存WT数チェック後、1つ起動して再配置"""
