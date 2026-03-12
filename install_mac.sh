@@ -45,11 +45,11 @@ if [ -f "\$GDRIVE_PY" ]; then
     cp "\$GDRIVE_PY" "\$LOCAL_PY" 2>/dev/null || true
 fi
 
-# バックグラウンドで起動し、このターミナルウィンドウを閉じる
+# バックグラウンドで起動し、シェルから切り離してウィンドウを閉じる
 nohup "$PYTHON" "\$LOCAL_PY" > /tmp/sokulauncher_stdout.log 2> /tmp/sokulauncher_stderr.log &
-
-# ターミナルウィンドウを閉じる
-osascript -e 'tell application "Terminal" to close front window' 2>/dev/null || true
+disown
+osascript -e 'tell application "Terminal" to close front window' 2>/dev/null &
+exit 0
 ENDSCRIPT
 chmod +x "$STARTER_SH"
 
