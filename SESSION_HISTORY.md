@@ -8299,3 +8299,12 @@ ex = (ex | WS_EX_APPWINDOW) & ~(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
 - 起動ごとにGドライブから最新版を自動コピー
 - folder_launcher.pyにクラッシュ保護追加
 - ユーザーがカスタムアイコン+Keyboardトグルメニューを追加
+---
+## 即ランチャー_017_Mac版常駐化とキーボードUI統一 (2026-03-13)
+- LaunchAgent→Terminal.app経由ログイン項目方式でGDriveアクセス問題解決
+- デスクトップダブルクリック→OPENサブメニュー方式
+- 多重起動防止（PIDファイル）、ターミナルウィンドウ自動クローズ
+- キーボードUI: アクセントカラー、2行カメラボタン、Term表記
+- キーボードヘッダにフォルダ名（角丸枠付き、高さ倍増）
+- タイトルバー維持機能復活（3秒ごとにAppleScriptで上書き）
+

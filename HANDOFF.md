@@ -4,6 +4,7 @@
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - アプリ名を「即ランチャー」に統一済み
 - DropboxからGoogleドライブへの移行対応完了（Win/Mac両方）
+- ブランチ `feature/mac-keyboard-sync` で作業中
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter）
@@ -16,21 +17,24 @@
 - `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
 
 ## Mac版の構成
-- `folder_launcher.py` — メイン（rumps + AppKit）
-- `install_mac.sh` — Mac版インストールスクリプト（.app作成+LaunchAgent登録）
-- `/Applications/即ランチャー.app` — インストール先
-- `~/Library/Application Support/SokuLauncher/folder_launcher.py` — ローカルコピー（GDrive権限問題回避）
-- `~/Library/LaunchAgents/com.sokulauncher.agent.plist` — 自動起動+KeepAlive
-- メニューバーにカスタムアイコン（フォルダ+キーボード）で表示
-- Keyboardトグルメニュー追加
+- `folder_launcher.py` — メイン（NSApplication + NSEvent、デスクトップダブルクリック方式）
+- `install_mac.sh` — Mac版インストールスクリプト（Terminal.app経由ログイン項目登録）
+- `~/Library/Application Support/SokuLauncher/` — ローカルコピー置き場
+  - `folder_launcher.py` — GDriveからコピーされた最新版
+  - `start.sh` — 起動スクリプト（GDrive→ローカルコピー→python3起動→ウィンドウ自動クローズ）
+- デスクトップダブルクリック → ポップアップメニュー（OPENサブメニュー展開）
+- Terminal.app経由起動でGDriveアクセス権を継承
+- キーボード同期（ターミナル数 = キーボード数、同じ幅・真下密着）
+- キーボードヘッダにフォルダ名を角丸枠付きで表示
 
-## Mac版インストール仕様（セッション016で追加）
-- `install_mac.sh` 1つで全自動: .appバンドル作成 → LaunchAgent登録 → 起動
-- **自動起動**: RunAtLoad（Mac起動時に自動起動）
-- **自動復帰**: KeepAlive（落ちても5秒後に自動再起動）
+## Mac版インストール仕様（セッション017で変更）
+- `install_mac.sh` 1つで全自動: start.sh作成 → ログイン項目登録 → 起動
+- **自動起動**: ログイン項目（Terminal.app経由）でMac起動時に自動起動
 - **自動更新**: 起動時にGoogleドライブから最新版をローカルにコピー
+- **GDriveアクセス**: Terminal.appの権限を継承（LaunchAgent方式はGDriveアクセス不可だった）
+- **多重起動防止**: PIDファイル方式（/tmp/sokulauncher.pid）
 - ログ: `/tmp/sokulauncher_stdout.log`, `/tmp/sokulauncher_stderr.log`
-- Pythonパス: `/Applications/Xcode.app/Contents/Developer/usr/bin/python3`（rumpsインストール済み）
+- Pythonパス: `/usr/bin/python3`（Xcode版Pythonにリダイレクト、PyObjCインストール済み）
 
 ## フォルダ探索の仕様
 - `_Apps2026` 直下のフォルダを表示
@@ -38,28 +42,30 @@
 - マイドライブ直下の `_other-projects`（ハイフン）内のサブフォルダも表示対象
 - Win版・Mac版ともに対応済み
 
-## 右クリック/メニュー構成
-- OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
-- Show All（再配置＋前面表示）
-- ⌨ Keyboard（トグル）
-- Refresh / Close All / Quit
+## メニュー構成（デスクトップダブルクリック）
+- OPEN → サブメニュー展開でフォルダ一覧
+- [Show All]（再配置＋前面表示）
+- [Close All] / [Quit]
+
+## タイトルバー維持
+- tty → フォルダ名のマッピング（_tty_titles辞書）
+- 3秒ごとにNSTimerで_refresh_titles()を呼び出し、AppleScriptでcustom titleを上書き
+- Claude Codeがタイトルを上書きするため、せめぎ合いが発生する（仕様）
+- キーボードヘッダにもフォルダ名を表示（こちらはチカチカしない）
+
+## 透明キーボードMac版の変更（セッション017）
+- yellowテーマ追加（7種統一）
+- 📷↑を2行にまたがるボタンに変更、📁ボタン削除
+- 📷↑とPrScrをアクセントカラーに
+- 🪟🪟→Term表記に変更
+- ヘッダ高さ倍増（18→36px）、角丸枠付きフォルダ名表示
+- Alpha 0.8、起動時2秒だけフローティング→level 0に降格
 
 ## 多重起動防止
 - Windows: Mutex（SokuLauncher_Mutex）
-- Mac: なし（rumpsの制約）
-
-## 2026-03-12の変更: キーボード機能統合
-### 経緯
-- 透明キーボードMac版を単独でメニューバー常駐させていたが、即ランチャーとアイコン枠を奪い合う問題が発生（macOSのノッチ付きMacはメニューバーのスペースが限られている）
-- 解決策: 透明キーボードのメニューバー常駐を廃止し、即ランチャーに統合
-
-### 変更内容
-- 即ランチャーのアイコンを📂絵文字→フォルダ+キーボードのNSImage描画に変更（Template対応でダークモードOK）
-- メニューに「⌨ Keyboard」トグル項目を追加（クリックでキーボード起動/終了）
-- 透明キーボードMac版からメニューバー常駐機能を削除（即ランチャーに任せる）
-- 透明キーボードの単独LaunchAgent（com.nock.transparent-keyboard.plist）を削除
+- Mac: PIDファイル（/tmp/sokulauncher.pid）
 
 ## 次のアクション
-- 透明キーボードMac版の横幅をターミナル幅に揃える（後で調整予定）
+- feature/mac-keyboard-sync ブランチをmainにマージするか判断
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
-- 次回 `install_mac.sh` 実行時にローカルコピーにも最新のアイコン+Keyboardトグルが反映される
+- ターミナルタイトルのチカチカ問題は現状仕様（Claude Code側の制御が必要）
