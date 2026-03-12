@@ -8290,3 +8290,12 @@ ex = (ex | WS_EX_APPWINDOW) & ~(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
 - デバッグログ追加（launcher_debug.log）
 - 透明キーボード: IME半角固定バグ修正（フォーカス復元）
 - 透明キーボード: 常時topmost維持を廃止（起動・整列時のみ一瞬topmost）
+
+---
+## 即ランチャー_016_Mac版インストール自動起動 (2026-03-12)
+- install_mac.sh作成: .appバンドル+LaunchAgent自動起動+KeepAlive
+- Mac起動時に自動起動（RunAtLoad）＋落ちたら自動復帰（KeepAlive）
+- Googleドライブ権限問題回避のためローカルコピーで実行
+- 起動ごとにGドライブから最新版を自動コピー
+- folder_launcher.pyにクラッシュ保護追加
+- ユーザーがカスタムアイコン+Keyboardトグルメニューを追加

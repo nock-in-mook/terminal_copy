@@ -17,7 +17,20 @@
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（rumps + AppKit）
-- メニューバー📂アイコンから操作
+- `install_mac.sh` — Mac版インストールスクリプト（.app作成+LaunchAgent登録）
+- `/Applications/即ランチャー.app` — インストール先
+- `~/Library/Application Support/SokuLauncher/folder_launcher.py` — ローカルコピー（GDrive権限問題回避）
+- `~/Library/LaunchAgents/com.sokulauncher.agent.plist` — 自動起動+KeepAlive
+- メニューバーにカスタムアイコン（フォルダ+キーボード）で表示
+- Keyboardトグルメニュー追加
+
+## Mac版インストール仕様（セッション016で追加）
+- `install_mac.sh` 1つで全自動: .appバンドル作成 → LaunchAgent登録 → 起動
+- **自動起動**: RunAtLoad（Mac起動時に自動起動）
+- **自動復帰**: KeepAlive（落ちても5秒後に自動再起動）
+- **自動更新**: 起動時にGoogleドライブから最新版をローカルにコピー
+- ログ: `/tmp/sokulauncher_stdout.log`, `/tmp/sokulauncher_stderr.log`
+- Pythonパス: `/Applications/Xcode.app/Contents/Developer/usr/bin/python3`（rumpsインストール済み）
 
 ## フォルダ探索の仕様
 - `_Apps2026` 直下のフォルダを表示
@@ -28,21 +41,14 @@
 ## 右クリック/メニュー構成
 - OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
 - Show All（再配置＋前面表示）
+- ⌨ Keyboard（トグル）
 - Refresh / Close All / Quit
 
 ## 多重起動防止
 - Windows: Mutex（SokuLauncher_Mutex）
 - Mac: なし（rumpsの制約）
 
-## 最新の変更（セッション016）
-- **Refreshクラッシュ修正**: pystrayスレッドから直接メニュー再構築→クラッシュの問題を、`root.after(0, ...)`でメインスレッド委譲に変更
-- **OPENメニュー仕切り線**: `_Apps2026`内フォルダと`_other-projects`内フォルダの間にセパレータ追加（Win/Mac両方）
-- **`get_folders()`をタプル返却に変更**: `(apps_folders, other_folders)` で分けて返す
-- **デバッグログ追加**: `launcher_debug.log` に記録（安定したら外す）
-- **透明キーボード修正**（透明キーボードリポジトリ側）:
-  - IME半角固定バグ修正（起動時にフォーカスを奪わないよう`SetForegroundWindow`で復元）
-  - 常時topmost維持を廃止（起動・整列時に一瞬だけtopmost→即解除）
-
 ## 次のアクション
 - 透明キーボードMac版の横幅をターミナル幅に揃える（後で調整予定）
 - UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
+- folder_launcher.pyにカスタムアイコン+Keyboardトグルが追加された（ユーザーが手動で変更）ので、次回install_mac.sh実行時にローカルコピーにも反映される

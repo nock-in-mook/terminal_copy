@@ -9,8 +9,11 @@ import os
 import sys
 import subprocess
 import time
+import tempfile
 import rumps
-from AppKit import NSScreen
+from AppKit import NSScreen, NSImage, NSColor, NSBezierPath, NSGraphicsContext
+from AppKit import NSPNGFileType, NSBitmapImageRep, NSCalibratedRGBColorSpace
+from Foundation import NSMakeRect, NSMakeSize
 
 import logging
 logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
@@ -221,9 +224,65 @@ def close_all_terminals():
     _close_all_keyboards()
 
 
+def _create_icon():
+    """フォルダ+キーボードのメニューバーアイコンをPNGとして生成"""
+    size = 44  # Retina用に2倍サイズで描画、表示は22x22
+    img = NSImage.alloc().initWithSize_(NSMakeSize(size, size))
+    img.lockFocus()
+
+    c = NSColor.colorWithCalibratedWhite_alpha_
+
+    # --- フォルダ（上半分） ---
+    # フォルダ本体
+    c(0.2, 1.0).setFill()
+    body = NSMakeRect(4, 16, 36, 22)
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(body, 3, 3).fill()
+    # フォルダのタブ
+    tab = NSMakeRect(4, 34, 14, 6)
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(tab, 2, 2).fill()
+    # フォルダ中身（明るい面）
+    c(0.45, 1.0).setFill()
+    inner = NSMakeRect(6, 18, 32, 16)
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(inner, 2, 2).fill()
+
+    # --- キーボード（フォルダの中に重なるように下寄り） ---
+    # キーボード本体
+    c(0.15, 1.0).setFill()
+    kb_body = NSMakeRect(8, 4, 28, 16)
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(kb_body, 3, 3).fill()
+    # キーボード内部
+    c(0.35, 1.0).setFill()
+    kb_inner = NSMakeRect(10, 6, 24, 12)
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(kb_inner, 2, 2).fill()
+    # キー上段（4個）
+    c(0.8, 1.0).setFill()
+    for col in range(4):
+        NSBezierPath.fillRect_(NSMakeRect(12 + col * 5.5, 13, 4, 3))
+    # キー中段（3個）
+    for col in range(3):
+        NSBezierPath.fillRect_(NSMakeRect(13.5 + col * 6, 9, 4, 3))
+    # スペースバー
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+        NSMakeRect(14, 6.5, 16, 2), 1, 1
+    ).fill()
+
+    img.unlockFocus()
+    img.setTemplate_(True)  # ダークモード対応
+
+    # PNGファイルに保存（rumpsはファイルパスでアイコン指定）
+    tiff = img.TIFFRepresentation()
+    bitmap = NSBitmapImageRep.imageRepWithData_(tiff)
+    png_data = bitmap.representationUsingType_properties_(NSPNGFileType, None)
+    icon_path = os.path.join(tempfile.gettempdir(), 'folder_launcher_icon.png')
+    png_data.writeToFile_atomically_(icon_path, True)
+    return icon_path
+
+
 class FolderLauncher(rumps.App):
     def __init__(self):
-        super().__init__("📂", quit_button=None)
+        icon_path = _create_icon()
+        super().__init__("", icon=icon_path, quit_button=None, template=True)
+        self._kb_visible = False
         self.menu = self._build_menu()
 
     def _build_menu(self):
@@ -245,6 +304,7 @@ class FolderLauncher(rumps.App):
 
         items.append(rumps.separator)
         items.append(rumps.MenuItem("[Show All]", callback=self._show_all))
+        items.append(rumps.MenuItem("⌨ Keyboard", callback=self._toggle_keyboard))
         items.append(rumps.separator)
         items.append(rumps.MenuItem("Refresh", callback=self._refresh))
         items.append(rumps.MenuItem("[Close All]", callback=self._close_all))
@@ -260,6 +320,20 @@ class FolderLauncher(rumps.App):
 
     def _show_all(self, _):
         bring_terminals_to_front()
+
+    def _toggle_keyboard(self, sender):
+        """透明キーボードの表示/非表示をトグル"""
+        pids = _find_kb_pids()
+        if pids:
+            # キーボードが起動中 → 全て閉じる
+            _close_all_keyboards()
+            self._kb_visible = False
+            sender.title = "⌨ Keyboard"
+        else:
+            # キーボードが未起動 → 起動
+            _launch_one_keyboard()
+            self._kb_visible = True
+            sender.title = "⌨ Hide Keyboard"
 
     def _on_open_click(self, sender):
         """フォルダを選んでターミナル起動"""
