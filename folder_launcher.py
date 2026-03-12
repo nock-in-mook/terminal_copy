@@ -115,6 +115,10 @@ def _reposition_windows():
     margin_top = int(sh * MARGIN_TOP_RATIO)
     win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
 
+    # キーボードサイズ: ターミナルと同じ幅、下の残りスペースを使う
+    kb_w = win_w
+    kb_h = (sh - menubar_h) - (margin_top + win_h)
+
     kb_positions = []
     for i in range(win_count):
         x = dock_margin + i * win_w
@@ -128,15 +132,12 @@ end tell'''
         _run_applescript(script)
 
         # キーボード位置を計算（macOS座標系: 左下原点）
-        # AppleScriptのboundsはメニューバー下端が y=0 の左上原点座標
-        # ターミナル下端（左上原点）= margin_top + win_h
-        # macOS座標に変換: y = sh - menubar_h - (margin_top + win_h)
         kb_x = x
         kb_y = sh - menubar_h - (margin_top + win_h)
         kb_positions.append((kb_x, kb_y))
 
-    # キーボードを同期配置
-    _sync_keyboards_with_positions(kb_positions)
+    # キーボードを同期配置（ターミナルと同じ幅、残りスペースの高さ）
+    _sync_keyboards_with_positions(kb_positions, kb_w=kb_w, kb_h=kb_h)
 
 
 # === 透明キーボード同期 ===
@@ -156,12 +157,17 @@ def _find_kb_pids():
         return []
 
 
-def _launch_one_keyboard(x=None, y=None):
-    """透明キーボードを1つ起動（位置指定可能）"""
+def _launch_one_keyboard(x=None, y=None, width=None, height=None, slot=0):
+    """透明キーボードを1つ起動（位置・サイズ・スロット指定）"""
     if os.path.exists(KB_SCRIPT):
         cmd = ['python3', KB_SCRIPT]
         if x is not None and y is not None:
             cmd += ['--x', str(x), '--y', str(y)]
+        if width is not None:
+            cmd += ['--width', str(width)]
+        if height is not None:
+            cmd += ['--height', str(height)]
+        cmd += ['--slot', str(slot)]
         subprocess.Popen(
             cmd,
             cwd=KB_DIR,
@@ -178,17 +184,18 @@ def _close_one_keyboard(pid):
         pass
 
 
-def _sync_keyboards_with_positions(positions):
+def _sync_keyboards_with_positions(positions, kb_w=None, kb_h=None):
     """キーボードを全て閉じてから、指定位置に必要数だけ起動し直す
     positions: [(x, y), ...] ターミナル真下の座標リスト（macOS座標系）
+    kb_w: キーボード幅, kb_h: キーボード高さ
     """
     # 既存を全て閉じる
     _close_all_keyboards()
     time.sleep(0.3)
-    # 必要数だけ起動
-    for (x, y) in positions:
-        _launch_one_keyboard(x=x, y=y)
-        time.sleep(0.3)
+    # 必要数だけ起動（スロット番号でテーマを分ける）
+    for slot, (x, y) in enumerate(positions):
+        _launch_one_keyboard(x=x, y=y, width=kb_w, height=kb_h, slot=slot)
+        time.sleep(0.2)
 
 
 def _close_all_keyboards():
@@ -281,7 +288,6 @@ class FolderLauncher(rumps.App):
     def __init__(self):
         icon_path = _create_icon()
         super().__init__("", icon=icon_path, quit_button=None, template=True)
-        self._kb_visible = False
         self.menu = self._build_menu()
 
     def _build_menu(self):
@@ -303,7 +309,6 @@ class FolderLauncher(rumps.App):
 
         items.append(rumps.separator)
         items.append(rumps.MenuItem("[Show All]", callback=self._show_all))
-        items.append(rumps.MenuItem("⌨ Keyboard", callback=self._toggle_keyboard))
         items.append(rumps.separator)
         items.append(rumps.MenuItem("Refresh", callback=self._refresh))
         items.append(rumps.MenuItem("[Close All]", callback=self._close_all))
@@ -319,20 +324,6 @@ class FolderLauncher(rumps.App):
 
     def _show_all(self, _):
         bring_terminals_to_front()
-
-    def _toggle_keyboard(self, sender):
-        """透明キーボードの表示/非表示をトグル"""
-        pids = _find_kb_pids()
-        if pids:
-            # キーボードが起動中 → 全て閉じる
-            _close_all_keyboards()
-            self._kb_visible = False
-            sender.title = "⌨ Keyboard"
-        else:
-            # キーボードが未起動 → 起動
-            _launch_one_keyboard()
-            self._kb_visible = True
-            sender.title = "⌨ Hide Keyboard"
 
     def _on_open_click(self, sender):
         """フォルダを選んでターミナル起動"""
