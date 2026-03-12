@@ -232,44 +232,43 @@ def _create_icon():
 
     c = NSColor.colorWithCalibratedWhite_alpha_
 
-    # --- フォルダ（上半分） ---
+    # --- フォルダ（上寄り・macOS座標は下が0） ---
     # フォルダ本体
-    c(0.2, 1.0).setFill()
-    body = NSMakeRect(4, 16, 36, 22)
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(body, 3, 3).fill()
+    c(0.2, 1.0).setStroke()
+    folder_path = NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+        NSMakeRect(2, 18, 40, 22), 3, 3
+    )
+    folder_path.setLineWidth_(2.5)
+    folder_path.stroke()
     # フォルダのタブ
-    tab = NSMakeRect(4, 34, 14, 6)
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(tab, 2, 2).fill()
-    # フォルダ中身（明るい面）
-    c(0.45, 1.0).setFill()
-    inner = NSMakeRect(6, 18, 32, 16)
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(inner, 2, 2).fill()
+    c(0.2, 1.0).setFill()
+    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+        NSMakeRect(2, 37, 16, 7), 2, 2
+    ).fill()
 
-    # --- キーボード（フォルダの中に重なるように下寄り） ---
-    # キーボード本体
-    c(0.15, 1.0).setFill()
-    kb_body = NSMakeRect(8, 4, 28, 16)
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(kb_body, 3, 3).fill()
-    # キーボード内部
-    c(0.35, 1.0).setFill()
-    kb_inner = NSMakeRect(10, 6, 24, 12)
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(kb_inner, 2, 2).fill()
-    # キー上段（4個）
-    c(0.8, 1.0).setFill()
+    # --- キーボード（下寄り、さっきのデザインそのまま） ---
+    # キーボード本体（枠線）
+    kb_path = NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+        NSMakeRect(4, 2, 36, 22), 3, 3
+    )
+    kb_path.setLineWidth_(2.5)
+    kb_path.stroke()
+    # 上段キー: 5個
+    c(0.2, 1.0).setFill()
+    for col in range(5):
+        NSBezierPath.fillRect_(NSMakeRect(7 + col * 6.5, 17, 5, 4))
+    # 中段キー: 4個
     for col in range(4):
-        NSBezierPath.fillRect_(NSMakeRect(12 + col * 5.5, 13, 4, 3))
-    # キー中段（3個）
-    for col in range(3):
-        NSBezierPath.fillRect_(NSMakeRect(13.5 + col * 6, 9, 4, 3))
+        NSBezierPath.fillRect_(NSMakeRect(9.5 + col * 6.5, 11.5, 5, 4))
     # スペースバー
     NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
-        NSMakeRect(14, 6.5, 16, 2), 1, 1
+        NSMakeRect(12, 4, 20, 5), 2, 2
     ).fill()
 
     img.unlockFocus()
-    img.setTemplate_(True)  # ダークモード対応
+    img.setTemplate_(True)
 
-    # PNGファイルに保存（rumpsはファイルパスでアイコン指定）
+    # PNGファイルに保存
     tiff = img.TIFFRepresentation()
     bitmap = NSBitmapImageRep.imageRepWithData_(tiff)
     png_data = bitmap.representationUsingType_properties_(NSPNGFileType, None)
