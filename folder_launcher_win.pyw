@@ -397,8 +397,9 @@ class DesktopClickDetector:
             ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
         ]
 
-    def __init__(self, on_desktop_dblclick):
+    def __init__(self, on_desktop_dblclick, on_any_click=None):
         self.on_desktop_dblclick = on_desktop_dblclick
+        self.on_any_click = on_any_click
         self._last_click_time = 0
         self._last_click_pos = (0, 0)
         self._hook = None
@@ -411,6 +412,9 @@ class DesktopClickDetector:
     def _low_level_mouse_proc(self, nCode, wParam, lParam):
         user32 = ctypes.windll.user32
         if nCode >= 0 and wParam == self.WM_LBUTTONDOWN:
+            # 任意クリックでポップアップを閉じる
+            if self.on_any_click:
+                self.on_any_click()
             ms = ctypes.cast(lParam, ctypes.POINTER(self.MSLLHOOKSTRUCT)).contents
             now = time.time()
             x, y = ms.pt.x, ms.pt.y
@@ -470,8 +474,10 @@ class App:
         threading.Thread(target=self.icon.run, daemon=True).start()
         # デスクトップダブルクリック検出
         self._popup = None
+        self._submenu = None
         self._detector = DesktopClickDetector(
-            lambda x, y: self.root.after(0, lambda: self._show_popup_menu(x, y))
+            on_desktop_dblclick=lambda x, y: self.root.after(0, lambda: self._show_popup_menu(x, y)),
+            on_any_click=lambda: self.root.after(0, self._dismiss_popup)
         )
         self._detector.start()
         # WT数監視（3秒ごと、KBが多ければ閉じて再整列）
@@ -502,44 +508,143 @@ class App:
             return
         open_terminals([folder_name])
 
-    def _show_popup_menu(self, x, y):
-        """デスクトップダブルクリック時にカーソル位置にポップアップメニュー表示"""
+    def _dismiss_popup(self):
+        """ポップアップメニューを閉じる"""
         if self._popup:
             try:
-                self._popup.unpost()
+                self._popup.destroy()
+            except Exception:
+                pass
+            self._popup = None
+        if self._submenu:
+            try:
+                self._submenu.destroy()
+            except Exception:
+                pass
+            self._submenu = None
+
+    def _show_popup_menu(self, x, y):
+        """デスクトップダブルクリック時にカーソル位置にToplevelメニュー表示"""
+        self._dismiss_popup()
+
+        FONT = ("Segoe UI", 10)
+        BG = "#f0f0f0"
+        BG_HOVER = "#0078d4"
+        FG = "#1a1a1a"
+        FG_HOVER = "#ffffff"
+        SEP_COLOR = "#d0d0d0"
+        PAD_X = 20
+        PAD_Y = 4
+
+        win = tk.Toplevel(self.root)
+        win.overrideredirect(True)
+        win.attributes('-topmost', True)
+        win.configure(bg=BG, highlightbackground="#999999", highlightthickness=1)
+
+        def make_item(parent, label, command):
+            lbl = tk.Label(parent, text=label, font=FONT, bg=BG, fg=FG,
+                           anchor='w', padx=PAD_X, pady=PAD_Y, cursor='hand2')
+            lbl.pack(fill='x')
+            lbl.bind('<Enter>', lambda e: lbl.configure(bg=BG_HOVER, fg=FG_HOVER))
+            lbl.bind('<Leave>', lambda e: lbl.configure(bg=BG, fg=FG))
+            lbl.bind('<Button-1>', lambda e: (self._dismiss_popup(), command()))
+            return lbl
+
+        def make_separator(parent):
+            tk.Frame(parent, height=1, bg=SEP_COLOR).pack(fill='x', padx=4, pady=2)
+
+        def make_cascade(parent, label, items):
+            lbl = tk.Label(parent, text=f"{label}  \u25b6", font=FONT, bg=BG, fg=FG,
+                           anchor='w', padx=PAD_X, pady=PAD_Y, cursor='hand2')
+            lbl.pack(fill='x')
+            lbl.bind('<Enter>', lambda e: (lbl.configure(bg=BG_HOVER, fg=FG_HOVER),
+                                           self._show_submenu(lbl, items)))
+            lbl.bind('<Leave>', lambda e: lbl.configure(bg=BG, fg=FG))
+            return lbl
+
+        # OPEN → サブメニュー（Chatは除外）
+        apps_folders, other_folders = get_folders()
+        all_items = []
+        for name in apps_folders:
+            if name.lower() == 'chat':
+                continue
+            all_items.append(('item', name, lambda n=name: threading.Thread(
+                target=lambda: self._open_single(n), daemon=True).start()))
+        if other_folders:
+            if all_items:
+                all_items.append(('sep',))
+            for name in other_folders:
+                all_items.append(('item', name, lambda n=name: threading.Thread(
+                    target=lambda: self._open_single(n), daemon=True).start()))
+
+        make_cascade(win, "OPEN", all_items)
+        make_separator(win)
+        make_item(win, "Show All", lambda: bring_terminals_to_front())
+        make_separator(win)
+        make_item(win, "Chat", lambda: threading.Thread(
+            target=lambda: self._open_single("Chat"), daemon=True).start())
+        make_separator(win)
+        make_item(win, "Refresh", lambda: self.root.after(0, self._rebuild_menu))
+        make_item(win, "Close All", lambda: self._close_all())
+
+        # 画面外にはみ出さない位置調整
+        win.update_idletasks()
+        w = win.winfo_reqwidth()
+        h = win.winfo_reqheight()
+        scr_w = win.winfo_screenwidth()
+        scr_h = win.winfo_screenheight()
+        if x + w > scr_w:
+            x = scr_w - w
+        if y + h > scr_h:
+            y = scr_h - h
+        win.geometry(f"+{x}+{y}")
+
+        self._popup = win
+        self._submenu = None
+
+    def _show_submenu(self, anchor, items):
+        """サブメニュー（OPENの中身）を表示"""
+        if self._submenu:
+            try:
+                self._submenu.destroy()
             except Exception:
                 pass
 
-        menu = tk.Menu(self.root, tearoff=0, font=("Segoe UI", 10))
+        FONT = ("Segoe UI", 10)
+        BG = "#f0f0f0"
+        BG_HOVER = "#0078d4"
+        FG = "#1a1a1a"
+        FG_HOVER = "#ffffff"
+        SEP_COLOR = "#d0d0d0"
+        PAD_X = 20
+        PAD_Y = 4
 
-        # OPENサブメニュー
-        open_menu = tk.Menu(menu, tearoff=0, font=("Segoe UI", 10))
-        apps_folders, other_folders = get_folders()
-        for name in apps_folders:
-            open_menu.add_command(label=name,
-                command=lambda n=name: threading.Thread(
-                    target=lambda: self._open_single(n), daemon=True).start())
-        if other_folders:
-            if apps_folders:
-                open_menu.add_separator()
-            for name in other_folders:
-                open_menu.add_command(label=name,
-                    command=lambda n=name: threading.Thread(
-                        target=lambda: self._open_single(n), daemon=True).start())
-        menu.add_cascade(label="OPEN", menu=open_menu)
-        menu.add_separator()
+        sub = tk.Toplevel(self.root)
+        sub.overrideredirect(True)
+        sub.attributes('-topmost', True)
+        sub.configure(bg=BG, highlightbackground="#999999", highlightthickness=1)
 
-        menu.add_command(label="Show All", command=lambda: bring_terminals_to_front())
-        menu.add_separator()
-        menu.add_command(label="Refresh", command=lambda: self.root.after(0, self._rebuild_menu))
-        menu.add_command(label="Close All", command=lambda: self._close_all())
-        menu.add_command(label="Quit", command=lambda: self._quit())
+        for item in items:
+            if item[0] == 'sep':
+                tk.Frame(sub, height=1, bg=SEP_COLOR).pack(fill='x', padx=4, pady=2)
+            else:
+                _, label, cmd = item
+                lbl = tk.Label(sub, text=label, font=FONT, bg=BG, fg=FG,
+                               anchor='w', padx=PAD_X, pady=PAD_Y, cursor='hand2')
+                lbl.pack(fill='x')
+                lbl.bind('<Enter>', lambda e, l=lbl: l.configure(bg=BG_HOVER, fg=FG_HOVER))
+                lbl.bind('<Leave>', lambda e, l=lbl: l.configure(bg=BG, fg=FG))
+                lbl.bind('<Button-1>', lambda e, c=cmd: (self._dismiss_popup(), c()))
 
-        self._popup = menu
-        try:
-            menu.tk_popup(x, y)
-        finally:
-            menu.grab_release()
+        sub.update_idletasks()
+        ax = anchor.winfo_rootx() + anchor.winfo_width()
+        ay = anchor.winfo_rooty()
+        scr_w = sub.winfo_screenwidth()
+        sub_w = sub.winfo_reqwidth()
+        if ax + sub_w > scr_w:
+            ax = anchor.winfo_rootx() - sub_w
+        sub.geometry(f"+{ax}+{ay}")
+        self._submenu = sub
 
     def _close_all(self):
         """Close All: 確認2回してから全WT閉じる"""
