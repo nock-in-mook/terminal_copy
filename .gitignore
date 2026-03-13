@@ -5,3 +5,4 @@ remote_start*.sh
 python3.dll
 python314.dll
 python314._pth
+launcher_debug.log
