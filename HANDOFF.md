@@ -5,6 +5,7 @@
 - ブランチ `feature/mac-keyboard-sync` で作業中
 - 透明キーボードを即ランチャーに完全統合済み
 - **Mac版メニューをWindows版と統一済み**
+- **Mac版自動起動をSokuLauncher.app方式に修正済み**
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
@@ -43,6 +44,13 @@
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu）
 - `install_mac.sh` — Mac版インストールスクリプト
+
+## Mac版自動起動（SokuLauncher.app方式）
+- `~/Library/Application Support/SokuLauncher/SokuLauncher.app` をログイン項目に登録
+- .appの中身は `open -a Terminal start.sh` するだけのシェルスクリプト
+- Terminal.app経由で起動するためGDriveアクセス権を継承できる
+- LSUIElement=trueで見えないアプリ（Dockに表示されない）
+- 以前のstart.sh直接登録はテキストエディタで開かれてしまう問題があった
 
 ## 次のアクション
 - feature/mac-keyboard-sync ブランチをmainにマージするか判断
