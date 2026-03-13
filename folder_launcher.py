@@ -102,15 +102,19 @@ def _get_screen_info():
     return int(full.size.width), int(full.size.height), dock_margin, menubar_h
 
 
+def _is_terminal_running():
+    """Terminal.appが起動しているかをpgrepで確認（AppleScriptを使わない）"""
+    result = subprocess.run(['pgrep', '-x', 'Terminal'], capture_output=True, text=True)
+    return result.returncode == 0
+
+
 def _get_terminal_window_count():
-    """Terminal.appのウィンドウ数を取得"""
+    """Terminal.appのウィンドウ数を取得（Terminal未起動なら0を返す）"""
+    if not _is_terminal_running():
+        return 0
     script = '''
 tell application "Terminal"
-    if it is running then
-        return count of windows
-    else
-        return 0
-    end if
+    return count of windows
 end tell'''
     result = _run_applescript(script)
     try:
@@ -239,8 +243,28 @@ def _close_all_keyboards():
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
-    # 起動してttyを取得し、タイトルマッピングに登録
-    script = f'''
+    terminal_was_running = _is_terminal_running()
+    # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
+    # Terminal起動済みの場合: do scriptで新ウィンドウを作る
+    if not terminal_was_running:
+        script = f'''
+tell application "Terminal"
+    activate
+    delay 0.5
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions" in front window
+    tell tab 1 of front window
+        set custom title to "{folder_name}"
+        set title displays custom title to true
+        set title displays device name to false
+        set title displays shell path to false
+        set title displays window size to false
+        set title displays file name to false
+    end tell
+    set ttyPath to tty of tab 1 of front window
+    return ttyPath
+end tell'''
+    else:
+        script = f'''
 tell application "Terminal"
     do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
     tell tab 1 of front window
@@ -264,7 +288,7 @@ end tell'''
 
 def _refresh_titles():
     """全ターミナルのタイトルをフォルダ名で上書き（Claude Codeの上書きを防ぐ）"""
-    if not _tty_titles:
+    if not _tty_titles or not _is_terminal_running():
         return
     for tty, title in list(_tty_titles.items()):
         script = f'''
@@ -282,13 +306,16 @@ end tell'''
 
 def bring_terminals_to_front():
     """全Terminal.appウィンドウを再配置＋最前面（キーボード同期含む）"""
+    if not _is_terminal_running():
+        return
     _reposition_windows()
     _run_applescript('tell application "Terminal" to activate')
 
 
 def close_all_terminals():
     """全Terminal.appウィンドウ＋全キーボードを閉じる"""
-    _run_applescript('tell application "Terminal" to close every window')
+    if _is_terminal_running():
+        _run_applescript('tell application "Terminal" to close every window')
     _close_all_keyboards()
 
 
