@@ -494,9 +494,10 @@ class App:
         # デスクトップダブルクリック検出
         self._popup = None
         self._submenu = None
+        self._popup_show_time = 0  # メニュー表示時刻（dismiss抑制用）
         self._detector = DesktopClickDetector(
             on_desktop_dblclick=lambda x, y: self.root.after(0, lambda: self._show_popup_menu(x, y)),
-            on_any_click=lambda: self.root.after(200, self._dismiss_popup)
+            on_any_click=lambda: self.root.after(100, self._safe_dismiss_popup)
         )
         self._detector.start()
         # WT数監視（3秒ごと、KBが多ければ閉じて再整列）
@@ -533,6 +534,12 @@ class App:
             self.root.after(0, lambda: messagebox.showerror("即ランチャー",
                 f"起動エラー: {traceback.format_exc()}"))
 
+    def _safe_dismiss_popup(self):
+        """メニュー表示直後のdismissを無視する（ダブルクリック2打目対策）"""
+        if time.time() - self._popup_show_time < 0.5:
+            return  # 表示から500ms以内は無視
+        self._dismiss_popup()
+
     def _dismiss_popup(self):
         """ポップアップメニューを閉じる"""
         if self._popup:
@@ -551,6 +558,7 @@ class App:
     def _show_popup_menu(self, x, y):
         """デスクトップダブルクリック時にカーソル位置にToplevelメニュー表示"""
         self._dismiss_popup()
+        self._popup_show_time = time.time()
 
         FONT = ("Segoe UI", 10)
         BG = "#f0f0f0"
