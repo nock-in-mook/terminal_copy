@@ -52,10 +52,10 @@
 - LSUIElement=trueで見えないアプリ（Dockに表示されない）
 - 以前のstart.sh直接登録はテキストエディタで開かれてしまう問題があった
 
-## 今回の修正（セッション020）
-- Terminal二重起動バグ修正: 未起動時は`activate`→`do script in front window`でデフォルトウィンドウ再利用
-- Terminal復活バグ修正: `pgrep -x Terminal`で起動チェック（AppleScriptの`tell application`がTerminalを起こす問題を回避）
-- Terminal.appの`warnOnClose`設定を`2`(Never)に変更（Claude Code実行中のnodeプロセスがダイアログを出していた）
+## 今回の修正（セッション021）
+- デスクトップアイコン上のダブルクリックでメニューが出るバグ修正
+- 原因: CGWindowListのlayer 0チェックだけではFinderが管理するデスクトップアイコンを検出できない
+- 修正: `_is_desktop_click`にFinderの選択状態チェックを追加（アイコンクリック時はselection > 0なのでメニュー表示をスキップ）
 
 ## 次のアクション
 - feature/mac-keyboard-sync ブランチをmainにマージするか判断
