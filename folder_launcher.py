@@ -362,7 +362,16 @@ def _is_desktop_click(x, y):
             # 通常アプリのウィンドウが被ってる → デスクトップではない
             return False
 
-    # layer 0 の通常ウィンドウが被ってない → デスクトップ
+    # layer 0 の通常ウィンドウが被ってない → デスクトップ領域
+    # さらにFinderの選択状態をチェック（アイコン上のクリックを除外）
+    try:
+        result = _run_applescript(
+            'tell application "Finder" to return count of (selection as alias list)')
+        if result and int(result) > 0:
+            return False  # アイコンが選択されている → 空白部分ではない
+    except (ValueError, Exception):
+        pass
+
     return True
 
 
