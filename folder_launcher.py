@@ -23,6 +23,7 @@ from AppKit import (
     NSMenuItem,
     NSAlert,
     NSAlertFirstButtonReturn,
+    NSImage,
 )
 from Quartz import (
     CGWindowListCopyWindowInfo,
@@ -448,7 +449,7 @@ class DesktopLauncher(NSObject):
 
         # --- Show All ---
         show_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "[Show All]", "showAll:", "")
+            "Show All", "showAll:", "")
         show_item.setTarget_(self)
         show_item.setEnabled_(True)
         menu.addItem_(show_item)
@@ -461,6 +462,10 @@ class DesktopLauncher(NSObject):
             "Chat", "openFolder:", "")
         chat_item.setTarget_(self)
         chat_item.setEnabled_(True)
+        chat_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+            "ellipsis.message", None)
+        if chat_icon:
+            chat_item.setImage_(chat_icon)
         menu.addItem_(chat_item)
 
         # --- セパレータ ---
@@ -471,11 +476,15 @@ class DesktopLauncher(NSObject):
             "Refresh", "refresh:", "")
         refresh_item.setTarget_(self)
         refresh_item.setEnabled_(True)
+        refresh_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+            "arrow.clockwise", None)
+        if refresh_icon:
+            refresh_item.setImage_(refresh_icon)
         menu.addItem_(refresh_item)
 
         # --- Close All ---
         close_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "[Close All]", "closeAll:", "")
+            "Close All", "closeAll:", "")
         close_item.setTarget_(self)
         close_item.setEnabled_(True)
         menu.addItem_(close_item)
