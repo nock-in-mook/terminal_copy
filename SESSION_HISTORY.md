@@ -8754,3 +8754,10 @@ OK、完了！まとめ：
 - SokuLauncher.app方式に変更（.appラッパー → open -a Terminal start.sh）
 - ログイン項目に.appを登録して確実に実行されるようにした
 - 再起動テストで動作確認OK
+
+---
+## 即ランチャー_020_Terminal二重起動・復活バグ修正 (2026-03-13)
+- Terminal未起動時にフォルダを開くとウィンドウが2つ開くバグを修正（デフォルトウィンドウ再利用）
+- Dock終了後にTerminalが復活するバグを修正（pgrep方式でAppleScriptによる意図しない起動を防止）
+- warnOnClose設定を修正（Claude Code実行中の確認ダイアログを無効化）
+
