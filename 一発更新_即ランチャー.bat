@@ -2,10 +2,11 @@
 chcp 65001 >nul
 title Setup
 
-:: Stop existing launcher (Mutex release for new instance)
+:: Stop existing processes (Mutex release for new instance)
 taskkill /f /im "即ランチャー.exe" >nul 2>&1
+taskkill /f /im "透明キーボード.exe" >nul 2>&1
 timeout /t 1 /nobreak >nul
-echo Stopped existing launcher.
+echo Stopped existing processes.
 
 :: Python
 set "PYTHON="
@@ -28,7 +29,7 @@ echo Python: %PYTHON%
 "%PYTHON%" -c "import pystray" >nul 2>&1
 if errorlevel 1 (
     echo Installing packages...
-    "%PYTHON%" -m pip install pystray pillow pefile --quiet
+    "%PYTHON%" -m pip install pystray pillow pefile pyinstaller --quiet
 )
 
 :: Check Windows Terminal
@@ -46,9 +47,22 @@ if exist "%WT_SETTINGS%" (
 
 :: Build exe（毎回再生成して最新状態を保証）
 set "LAUNCHER_EXE=%~dp0即ランチャー.exe"
-echo Building exe...
+echo Building launcher exe...
 set "PYTHONUTF8=1"
 "%PYTHON%" "%~dp0_build_exe.py"
+
+:: Build keyboard exe（透明キーボードも即ランチャーに統合）
+set "KB_DIR=%~dp0..\透明キーボード"
+if exist "%KB_DIR%\transparent_keyboard.py" (
+    echo Building keyboard exe...
+    "%PYTHON%" -m PyInstaller --noconfirm "%KB_DIR%\透明キーボード.spec" --distpath "%KB_DIR%\dist" --workpath "%KB_DIR%\build" >nul 2>&1
+    if exist "%KB_DIR%\dist\透明キーボード.exe" (
+        copy /y "%KB_DIR%\dist\透明キーボード.exe" "%KB_DIR%\透明キーボード.exe" >nul
+        echo   Keyboard exe updated.
+    ) else (
+        echo   WARNING: Keyboard exe build failed.
+    )
+)
 
 :: Shortcuts + Launch（日本語パス対応のためPythonで実行）
 set "PYTHONUTF8=1"

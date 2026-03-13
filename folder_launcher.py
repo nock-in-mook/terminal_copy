@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # folder_launcher.py
-# Mac版フォルダランチャー：メニューバー常駐
+# Mac版フォルダランチャー：デスクトップダブルクリックでポップアップメニュー
+# - デスクトップの空白部分をダブルクリック → メニュー表示
 # - [OPEN] サブメニューからフォルダ選択 → ターミナル起動
 # - 最大4ウィンドウ、左寄せ配置（Dock幅分マージン）
 # - 透明キーボード同期（ターミナル数 = キーボード数）
@@ -9,15 +10,26 @@ import os
 import sys
 import subprocess
 import time
-import tempfile
-import rumps
-from AppKit import NSScreen, NSImage, NSColor, NSBezierPath, NSGraphicsContext
-from AppKit import NSPNGFileType, NSBitmapImageRep, NSCalibratedRGBColorSpace
-from Foundation import NSMakeRect, NSMakeSize
 
-import logging
-logging.basicConfig(filename='/tmp/launcher_debug.log', level=logging.DEBUG,
-                    format='%(asctime)s %(message)s')
+import objc
+from Foundation import NSObject, NSMakePoint, NSTimer
+from AppKit import (
+    NSApplication,
+    NSApplicationActivationPolicyAccessory,
+    NSEvent,
+    NSLeftMouseDownMask,
+    NSScreen,
+    NSMenu,
+    NSMenuItem,
+    NSAlert,
+    NSAlertFirstButtonReturn,
+    NSImage,
+)
+from Quartz import (
+    CGWindowListCopyWindowInfo,
+    kCGWindowListOptionOnScreenOnly,
+    kCGNullWindowID,
+)
 
 # 監視対象の親ディレクトリ
 APPS_DIR = os.path.expanduser("~/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026")
@@ -36,6 +48,9 @@ MAX_TERMINALS = 4
 KB_DIR = os.path.join(APPS_DIR, "透明キーボード", "mac")
 KB_SCRIPT = os.path.join(KB_DIR, "transparent_keyboard_mac.py")
 
+# tty → フォルダ名のマッピング（タイトル維持用）
+_tty_titles = {}
+
 
 def get_folders():
     """フォルダ一覧を取得（_Apps2026内とother-projects内を分けて返す）
@@ -53,7 +68,9 @@ def get_folders():
                         if not e.startswith('.') and os.path.isdir(os.path.join(OTHER_PROJECTS_DIR, e))],
                        key=str.lower)
         return apps_folders, other_folders
-    except OSError:
+    except OSError as e:
+        import sys
+        print(f"get_folders ERROR: {e}", file=sys.stderr, flush=True)
         return [], []
 
 
@@ -85,15 +102,19 @@ def _get_screen_info():
     return int(full.size.width), int(full.size.height), dock_margin, menubar_h
 
 
+def _is_terminal_running():
+    """Terminal.appが起動しているかをpgrepで確認（AppleScriptを使わない）"""
+    result = subprocess.run(['pgrep', '-x', 'Terminal'], capture_output=True, text=True)
+    return result.returncode == 0
+
+
 def _get_terminal_window_count():
-    """Terminal.appのウィンドウ数を取得"""
+    """Terminal.appのウィンドウ数を取得（Terminal未起動なら0を返す）"""
+    if not _is_terminal_running():
+        return 0
     script = '''
 tell application "Terminal"
-    if it is running then
-        return count of windows
-    else
-        return 0
-    end if
+    return count of windows
 end tell'''
     result = _run_applescript(script)
     try:
@@ -115,28 +136,36 @@ def _reposition_windows():
     margin_top = int(sh * MARGIN_TOP_RATIO)
     win_h = sh - margin_top - int(sh * MARGIN_BOTTOM_RATIO)
 
+    # キーボードサイズ: ターミナルと同じ幅、下の残りスペースを使う
+    kb_w = win_w
+    kb_h = (sh - menubar_h) - (margin_top + win_h)
+
     kb_positions = []
+    kb_titles = []
     for i in range(win_count):
         x = dock_margin + i * win_w
         win_idx = win_count - i
+        # ターミナル配置＆tty取得
         script = f'''
 tell application "Terminal"
     if (count of windows) >= {win_idx} then
         set bounds of window {win_idx} to {{{x}, {margin_top}, {x + win_w}, {margin_top + win_h}}}
+        return tty of tab 1 of window {win_idx}
     end if
 end tell'''
-        _run_applescript(script)
+        tty = _run_applescript(script)
+
+        # ttyからフォルダ名を取得
+        title = _tty_titles.get(tty, '') if tty else ''
+        kb_titles.append(title)
 
         # キーボード位置を計算（macOS座標系: 左下原点）
-        # AppleScriptのboundsはメニューバー下端が y=0 の左上原点座標
-        # ターミナル下端（左上原点）= margin_top + win_h
-        # macOS座標に変換: y = sh - menubar_h - (margin_top + win_h)
         kb_x = x
         kb_y = sh - menubar_h - (margin_top + win_h)
         kb_positions.append((kb_x, kb_y))
 
-    # キーボードを同期配置
-    _sync_keyboards_with_positions(kb_positions)
+    # キーボードを同期配置（ターミナルと同じ幅、残りスペースの高さ）
+    _sync_keyboards_with_positions(kb_positions, kb_w=kb_w, kb_h=kb_h, titles=kb_titles)
 
 
 # === 透明キーボード同期 ===
@@ -156,12 +185,19 @@ def _find_kb_pids():
         return []
 
 
-def _launch_one_keyboard(x=None, y=None):
-    """透明キーボードを1つ起動（位置指定可能）"""
+def _launch_one_keyboard(x=None, y=None, width=None, height=None, slot=0, title=''):
+    """透明キーボードを1つ起動（位置・サイズ・スロット・タイトル指定）"""
     if os.path.exists(KB_SCRIPT):
         cmd = ['python3', KB_SCRIPT]
         if x is not None and y is not None:
             cmd += ['--x', str(x), '--y', str(y)]
+        if width is not None:
+            cmd += ['--width', str(width)]
+        if height is not None:
+            cmd += ['--height', str(height)]
+        cmd += ['--slot', str(slot)]
+        if title:
+            cmd += ['--title', title]
         subprocess.Popen(
             cmd,
             cwd=KB_DIR,
@@ -178,17 +214,22 @@ def _close_one_keyboard(pid):
         pass
 
 
-def _sync_keyboards_with_positions(positions):
+def _sync_keyboards_with_positions(positions, kb_w=None, kb_h=None, titles=None):
     """キーボードを全て閉じてから、指定位置に必要数だけ起動し直す
     positions: [(x, y), ...] ターミナル真下の座標リスト（macOS座標系）
+    kb_w: キーボード幅, kb_h: キーボード高さ
+    titles: [str, ...] 各スロットのフォルダ名
     """
+    if titles is None:
+        titles = [''] * len(positions)
     # 既存を全て閉じる
     _close_all_keyboards()
     time.sleep(0.3)
-    # 必要数だけ起動
-    for (x, y) in positions:
-        _launch_one_keyboard(x=x, y=y)
-        time.sleep(0.3)
+    # 必要数だけ起動（スロット番号でテーマを分ける）
+    for slot, (x, y) in enumerate(positions):
+        title = titles[slot] if slot < len(titles) else ''
+        _launch_one_keyboard(x=x, y=y, width=kb_w, height=kb_h, slot=slot, title=title)
+        time.sleep(0.2)
 
 
 def _close_all_keyboards():
@@ -202,168 +243,351 @@ def _close_all_keyboards():
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
-    script = f'''
+    terminal_was_running = _is_terminal_running()
+    # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
+    # Terminal起動済みの場合: do scriptで新ウィンドウを作る
+    if not terminal_was_running:
+        script = f'''
 tell application "Terminal"
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && echo -ne \\"\\\\033]0;{folder_name}\\\\007\\" && claude --dangerously-skip-permissions"
     activate
+    delay 0.5
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions" in front window
+    tell tab 1 of front window
+        set custom title to "{folder_name}"
+        set title displays custom title to true
+        set title displays device name to false
+        set title displays shell path to false
+        set title displays window size to false
+        set title displays file name to false
+    end tell
+    set ttyPath to tty of tab 1 of front window
+    return ttyPath
 end tell'''
-    _run_applescript(script)
+    else:
+        script = f'''
+tell application "Terminal"
+    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
+    tell tab 1 of front window
+        set custom title to "{folder_name}"
+        set title displays custom title to true
+        set title displays device name to false
+        set title displays shell path to false
+        set title displays window size to false
+        set title displays file name to false
+    end tell
+    set ttyPath to tty of tab 1 of front window
+    activate
+    return ttyPath
+end tell'''
+    tty = _run_applescript(script)
+    if tty:
+        _tty_titles[tty] = folder_name
     time.sleep(1.5)
     _reposition_windows()
 
 
+def _refresh_titles():
+    """全ターミナルのタイトルをフォルダ名で上書き（Claude Codeの上書きを防ぐ）"""
+    if not _tty_titles or not _is_terminal_running():
+        return
+    for tty, title in list(_tty_titles.items()):
+        script = f'''
+tell application "Terminal"
+    repeat with w in windows
+        repeat with t in tabs of w
+            if tty of t is "{tty}" then
+                set custom title of t to "{title}"
+            end if
+        end repeat
+    end repeat
+end tell'''
+        _run_applescript(script)
+
+
 def bring_terminals_to_front():
     """全Terminal.appウィンドウを再配置＋最前面（キーボード同期含む）"""
+    if not _is_terminal_running():
+        return
     _reposition_windows()
     _run_applescript('tell application "Terminal" to activate')
 
 
 def close_all_terminals():
     """全Terminal.appウィンドウ＋全キーボードを閉じる"""
-    _run_applescript('tell application "Terminal" to close every window')
+    if _is_terminal_running():
+        _run_applescript('tell application "Terminal" to close every window')
     _close_all_keyboards()
 
 
-def _create_icon():
-    """フォルダ+キーボードのメニューバーアイコンをPNGとして生成"""
-    size = 44  # Retina用に2倍サイズで描画、表示は22x22
-    img = NSImage.alloc().initWithSize_(NSMakeSize(size, size))
-    img.lockFocus()
+# === デスクトップダブルクリック検知 ===
 
-    c = NSColor.colorWithCalibratedWhite_alpha_
-
-    # --- フォルダ（上寄り・macOS座標は下が0） ---
-    # フォルダ本体
-    c(0.2, 1.0).setStroke()
-    folder_path = NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
-        NSMakeRect(2, 18, 40, 22), 3, 3
+def _is_desktop_click(x, y):
+    """クリック座標がデスクトップの空白部分かどうか判定
+    CGWindowListCopyWindowInfoで画面上のウィンドウを前面から順にチェックし、
+    通常のアプリウィンドウ（layer 0）がクリック位置になければデスクトップと判定
+    """
+    windows = CGWindowListCopyWindowInfo(
+        kCGWindowListOptionOnScreenOnly,
+        kCGNullWindowID
     )
-    folder_path.setLineWidth_(2.5)
-    folder_path.stroke()
-    # フォルダのタブ
-    c(0.2, 1.0).setFill()
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
-        NSMakeRect(2, 37, 16, 7), 2, 2
-    ).fill()
+    if not windows:
+        return False
 
-    # --- キーボード（下寄り、さっきのデザインそのまま） ---
-    # キーボード本体（枠線）
-    kb_path = NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
-        NSMakeRect(4, 2, 36, 22), 3, 3
-    )
-    kb_path.setLineWidth_(2.5)
-    kb_path.stroke()
-    # 上段キー: 5個
-    c(0.2, 1.0).setFill()
-    for col in range(5):
-        NSBezierPath.fillRect_(NSMakeRect(7 + col * 6.5, 17, 5, 4))
-    # 中段キー: 4個
-    for col in range(4):
-        NSBezierPath.fillRect_(NSMakeRect(9.5 + col * 6.5, 11.5, 5, 4))
-    # スペースバー
-    NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
-        NSMakeRect(12, 4, 20, 5), 2, 2
-    ).fill()
+    # 除外するオーナー（システム系・リモートデスクトップのオーバーレイ等）
+    IGNORE_OWNERS = {'Dock', 'Window Server', 'WindowManager', 'AnyDesk',
+                     'Control Center', 'SystemUIServer'}
 
-    img.unlockFocus()
-    img.setTemplate_(True)
+    for win in windows:
+        layer = win.get('kCGWindowLayer', -1)
+        # 通常ウィンドウ層（layer 0）のみチェック
+        if layer != 0:
+            continue
 
-    # PNGファイルに保存
-    tiff = img.TIFFRepresentation()
-    bitmap = NSBitmapImageRep.imageRepWithData_(tiff)
-    png_data = bitmap.representationUsingType_properties_(NSPNGFileType, None)
-    icon_path = os.path.join(tempfile.gettempdir(), 'folder_launcher_icon.png')
-    png_data.writeToFile_atomically_(icon_path, True)
-    return icon_path
+        owner = win.get('kCGWindowOwnerName', '')
+        # システム系のウィンドウは無視
+        if owner in IGNORE_OWNERS:
+            continue
+
+        bounds = win.get('kCGWindowBounds')
+        if not bounds:
+            continue
+
+        wx = bounds.get('X', 0)
+        wy = bounds.get('Y', 0)
+        ww = bounds.get('Width', 0)
+        wh = bounds.get('Height', 0)
+
+        # クリック座標がこのウィンドウ内か
+        if wx <= x <= wx + ww and wy <= y <= wy + wh:
+            # 通常アプリのウィンドウが被ってる → デスクトップではない
+            return False
+
+    # layer 0 の通常ウィンドウが被ってない → デスクトップ
+    return True
 
 
-class FolderLauncher(rumps.App):
-    def __init__(self):
-        icon_path = _create_icon()
-        super().__init__("", icon=icon_path, quit_button=None, template=True)
-        self._kb_visible = False
-        self.menu = self._build_menu()
+class _Invoker(NSObject):
+    """NSTimerコールバック用ヘルパー"""
+    def initWithBlock_(self, block):
+        self = objc.super(_Invoker, self).init()
+        if self is None:
+            return None
+        self._block = block
+        return self
 
-    def _build_menu(self):
-        apps_folders, other_folders = get_folders()
-        items = []
+    def invoke_(self, timer):
+        if self._block:
+            self._block()
 
-        # [OPEN] → サブメニューでフォルダ一覧（apps + セパレータ + other-projects）
-        open_menu = rumps.MenuItem("[OPEN]")
-        for name in apps_folders:
-            item = rumps.MenuItem(name, callback=self._on_open_click)
-            open_menu.add(item)
-        if other_folders:
-            if apps_folders:
-                open_menu.add(rumps.separator)
-            for name in other_folders:
-                item = rumps.MenuItem(name, callback=self._on_open_click)
-                open_menu.add(item)
-        items.append(open_menu)
 
-        items.append(rumps.separator)
-        items.append(rumps.MenuItem("[Show All]", callback=self._show_all))
-        items.append(rumps.MenuItem("⌨ Keyboard", callback=self._toggle_keyboard))
-        items.append(rumps.separator)
-        items.append(rumps.MenuItem("Refresh", callback=self._refresh))
-        items.append(rumps.MenuItem("[Close All]", callback=self._close_all))
-        items.append(rumps.MenuItem("Quit", callback=self._quit))
+class DesktopLauncher(NSObject):
+    """デスクトップダブルクリックでポップアップメニューを表示するランチャー"""
 
-        return items
+    def init(self):
+        self = objc.super(DesktopLauncher, self).init()
+        if self is None:
+            return None
+        self._last_click_time = 0
+        self._last_click_x = 0
+        self._last_click_y = 0
+        return self
 
-    def _rebuild_menu(self):
-        """メニューを再構築"""
-        self.menu.clear()
-        for item in self._build_menu():
-            self.menu.add(item)
+    def start(self):
+        """イベント監視を開始"""
+        NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
+            NSLeftMouseDownMask,
+            self._on_global_click
+        )
+        # 3秒ごとにターミナルタイトルをフォルダ名で上書き
+        invoker = _Invoker.alloc().initWithBlock_(_refresh_titles)
+        self._title_timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+            3.0, invoker, "invoke:", None, True
+        )
+        print("即ランチャー起動: デスクトップダブルクリック待機中", flush=True)
 
-    def _show_all(self, _):
-        bring_terminals_to_front()
+    @objc.python_method
+    def _on_global_click(self, event):
+        """グローバルマウスクリックハンドラ"""
+        # クリック座標（macOS座標: 左下原点）
+        loc = NSEvent.mouseLocation()
+        # CGWindowListは左上原点なので変換
+        screen = NSScreen.mainScreen()
+        screen_h = screen.frame().size.height
+        cg_x = loc.x
+        cg_y = screen_h - loc.y
 
-    def _toggle_keyboard(self, sender):
-        """透明キーボードの表示/非表示をトグル"""
-        pids = _find_kb_pids()
-        if pids:
-            # キーボードが起動中 → 全て閉じる
-            _close_all_keyboards()
-            self._kb_visible = False
-            sender.title = "⌨ Keyboard"
+        now = time.time()
+        dx = abs(cg_x - self._last_click_x)
+        dy = abs(cg_y - self._last_click_y)
+
+        # ダブルクリック判定: 0.4秒以内、5px以内
+        if now - self._last_click_time < 0.4 and dx < 5 and dy < 5:
+            # ダブルクリック検出 → デスクトップか判定
+            if _is_desktop_click(cg_x, cg_y):
+                self._show_menu(loc)
+            self._last_click_time = 0  # リセット
         else:
-            # キーボードが未起動 → 起動
-            _launch_one_keyboard()
-            self._kb_visible = True
-            sender.title = "⌨ Hide Keyboard"
+            self._last_click_time = now
+            self._last_click_x = cg_x
+            self._last_click_y = cg_y
 
-    def _on_open_click(self, sender):
+    @objc.python_method
+    def _show_menu(self, location):
+        """ポップアップメニューを表示"""
+        app = NSApplication.sharedApplication()
+        app.activateIgnoringOtherApps_(True)
+
+        menu = NSMenu.alloc().initWithTitle_("即ランチャー")
+        menu.setAutoenablesItems_(False)
+
+        # --- OPEN サブメニュー（Chatは除外） ---
+        apps_folders, other_folders = get_folders()
+
+        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "OPEN", None, "")
+        open_item.setEnabled_(True)
+        open_submenu = NSMenu.alloc().initWithTitle_("OPEN")
+        open_submenu.setAutoenablesItems_(False)
+
+        for name in apps_folders:
+            if name.lower() == 'chat':
+                continue
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                name, "openFolder:", "")
+            item.setTarget_(self)
+            item.setEnabled_(True)
+            open_submenu.addItem_(item)
+
+        if other_folders and apps_folders:
+            open_submenu.addItem_(NSMenuItem.separatorItem())
+
+        for name in other_folders:
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                name, "openFolder:", "")
+            item.setTarget_(self)
+            item.setEnabled_(True)
+            open_submenu.addItem_(item)
+
+        open_item.setSubmenu_(open_submenu)
+        menu.addItem_(open_item)
+
+        # --- セパレータ ---
+        menu.addItem_(NSMenuItem.separatorItem())
+
+        # --- Show All ---
+        show_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Show All", "showAll:", "")
+        show_item.setTarget_(self)
+        show_item.setEnabled_(True)
+        menu.addItem_(show_item)
+
+        # --- セパレータ ---
+        menu.addItem_(NSMenuItem.separatorItem())
+
+        # --- Chat（トップレベルに独立配置） ---
+        chat_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Chat", "openFolder:", "")
+        chat_item.setTarget_(self)
+        chat_item.setEnabled_(True)
+        chat_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+            "ellipsis.message", None)
+        if chat_icon:
+            chat_item.setImage_(chat_icon)
+        menu.addItem_(chat_item)
+
+        # --- セパレータ ---
+        menu.addItem_(NSMenuItem.separatorItem())
+
+        # --- Refresh ---
+        refresh_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Refresh", "refresh:", "")
+        refresh_item.setTarget_(self)
+        refresh_item.setEnabled_(True)
+        refresh_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+            "arrow.clockwise", None)
+        if refresh_icon:
+            refresh_item.setImage_(refresh_icon)
+        menu.addItem_(refresh_item)
+
+        # --- Close All ---
+        close_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Close All", "closeAll:", "")
+        close_item.setTarget_(self)
+        close_item.setEnabled_(True)
+        menu.addItem_(close_item)
+
+        # メニューをクリック位置に表示
+        menu.popUpMenuPositioningItem_atLocation_inView_(
+            None, location, None
+        )
+
+    # === メニューアクション（ObjCセレクタ） ===
+
+    def openFolder_(self, sender):
         """フォルダを選んでターミナル起動"""
+        name = sender.title()
         current = _get_terminal_window_count()
         if current >= MAX_TERMINALS:
-            rumps.alert(f"{current}個のターミナルが開いています（最大{MAX_TERMINALS}）。\n先に閉じてください。")
+            alert = NSAlert.alloc().init()
+            alert.setMessageText_(f"{current}個のターミナルが開いています（最大{MAX_TERMINALS}）。\n先に閉じてください。")
+            alert.runModal()
             return
-        open_terminal(sender.title)
+        open_terminal(name)
 
-    def _refresh(self, _):
-        """フォルダ一覧を再読み込み"""
-        self._rebuild_menu()
-        rumps.notification("Folder Launcher", "", "フォルダ一覧を更新しました")
+    def showAll_(self, sender):
+        bring_terminals_to_front()
 
-    def _close_all(self, _):
+    def refresh_(self, sender):
+        """フォルダ一覧は毎回メニュー表示時に取得するので何もしない"""
+        pass
+
+    def closeAll_(self, sender):
         """全ターミナル＋キーボードを閉じる（確認2回）"""
         count = _get_terminal_window_count()
         if count == 0:
-            rumps.alert("開いているターミナルはありません。")
+            alert = NSAlert.alloc().init()
+            alert.setMessageText_("開いているターミナルはありません。")
+            alert.runModal()
             return
-        r1 = rumps.alert(f"{count}個のターミナルを全て閉じますか？",
-                         ok="閉じる", cancel="キャンセル")
-        if r1 != 1:
+
+        alert1 = NSAlert.alloc().init()
+        alert1.setMessageText_(f"{count}個のターミナルを全て閉じますか？")
+        alert1.addButtonWithTitle_("閉じる")
+        alert1.addButtonWithTitle_("キャンセル")
+        if alert1.runModal() != NSAlertFirstButtonReturn:
             return
-        r2 = rumps.alert("本当に閉じますか？\n保存していない作業は失われます。",
-                         ok="閉じる", cancel="キャンセル")
-        if r2 == 1:
+
+        alert2 = NSAlert.alloc().init()
+        alert2.setMessageText_("本当に閉じますか？\n保存していない作業は失われます。")
+        alert2.addButtonWithTitle_("閉じる")
+        alert2.addButtonWithTitle_("キャンセル")
+        if alert2.runModal() == NSAlertFirstButtonReturn:
             close_all_terminals()
 
-    def _quit(self, _):
-        rumps.quit_application()
+
+# === ターミナル数ポーリング（3秒ごとにKB自動削減） ===
+
+def _poll_terminal_count(launcher):
+    """3秒ごとにターミナル数を監視、減ったらKBも減らして再整列"""
+    wt_count = _get_terminal_window_count()
+    kb_pids = _find_kb_pids()
+    kb_count = len(kb_pids)
+    if kb_count > wt_count:
+        # 余分なKBを閉じる（後ろから）
+        excess = kb_count - wt_count
+        for i in range(excess):
+            _close_one_keyboard(kb_pids[-(i + 1)])
+        # 0.3秒後に再整列（メインスレッドをブロックしない）
+        if wt_count > 0:
+            reposition_invoker = _Invoker.alloc().initWithBlock_(_reposition_windows)
+            NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+                0.3, reposition_invoker, "invoke:", None, False
+            )
+    # 次のポーリングをスケジュール
+    invoker = _Invoker.alloc().initWithBlock_(lambda: _poll_terminal_count(launcher))
+    NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+        3.0, invoker, "invoke:", None, False
+    )
 
 
 if __name__ == "__main__":
@@ -377,9 +601,35 @@ if __name__ == "__main__":
         if idx + 1 < len(sys.argv):
             open_terminal(sys.argv[idx + 1])
         sys.exit(0)
-    # クラッシュ保護: 未処理例外をログに記録
+
+    # 多重起動防止（PIDファイル方式）
+    import signal
+    pidfile = "/tmp/sokulauncher.pid"
+    if os.path.exists(pidfile):
+        try:
+            old_pid = int(open(pidfile).read().strip())
+            os.kill(old_pid, 0)  # プロセス存在チェック
+            # まだ動いてる → 古い方を終了
+            os.kill(old_pid, signal.SIGTERM)
+            time.sleep(0.5)
+        except (ProcessLookupError, ValueError, PermissionError):
+            pass  # 既に死んでる
+    with open(pidfile, "w") as f:
+        f.write(str(os.getpid()))
+
+    # NSApplicationベースのバックグラウンド常駐
+    app = NSApplication.sharedApplication()
+    app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)  # Dock非表示
+
+    launcher = DesktopLauncher.alloc().init()
+    launcher.start()
+
+    # ターミナル数ポーリング開始（3秒ごと）
+    _poll_terminal_count(launcher)
+
+    # クラッシュ保護
     try:
-        FolderLauncher().run()
+        app.run()
     except Exception as e:
-        logging.critical(f"即ランチャーがクラッシュ: {e}", exc_info=True)
+        import traceback; traceback.print_exc()
         raise

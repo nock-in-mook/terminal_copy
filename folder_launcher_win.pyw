@@ -20,6 +20,27 @@ logging.basicConfig(filename=_log_path, level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
                     encoding='utf-8')
 
+# DPI Aware（くっきり表示 — Windows DPIスケーリングによるぼやけを防止）
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-Monitor DPI Aware V2
+except Exception:
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
+
+def _get_dpi_scale():
+    """DPIスケール取得（96dpi=1.0, 120dpi=1.25, 144dpi=1.5）"""
+    try:
+        hdc = ctypes.windll.user32.GetDC(0)
+        dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
+        ctypes.windll.user32.ReleaseDC(0, hdc)
+        return dpi / 96.0
+    except Exception:
+        return 1.0
+
+DPI_SCALE = _get_dpi_scale()
+
 # Tcl/Tkライブラリのパス設定（即ランチャー.exeから起動時に必要）
 for _d in [os.path.dirname(sys.executable)] + sys.path:
     _tcl_dir = os.path.join(_d, "tcl")
@@ -42,8 +63,6 @@ if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
 APP_ID = "SokuLauncher.即ランチャー"
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
 
-# DPIスケーリング: 呼ばない方がMoveWindowの論理座標でWTを狭くできる
-
 # 監視対象の親ディレクトリ
 APPS_DIR = os.path.join(os.environ.get("USERPROFILE", ""), "Google ドライブ", "_Apps2026")
 if not os.path.isdir(APPS_DIR):
@@ -53,8 +72,8 @@ if not os.path.isdir(APPS_DIR):
 SCREEN_USE_RATIO = 0.95
 MARGIN_TOP_RATIO = 0.0
 MARGIN_BOTTOM_RATIO = 0.20  # キーボード領域を確保
-SHADOW_OVERLAP = 14
-SHADOW_INSET = 7  # ウィンドウ影の片側幅
+SHADOW_OVERLAP = round(14 * DPI_SCALE)
+SHADOW_INSET = round(7 * DPI_SCALE)  # ウィンドウ影の片側幅
 MAX_TERMINALS = 3
 KB_HEIGHT_RATIO = 0.20  # キーボード高さ = 画面の20%
 
@@ -100,6 +119,31 @@ def resolve_folder_path(name):
     if os.path.isdir(other):
         return other
     return direct  # フォールバック
+
+
+def _find_desktop_listview():
+    """デスクトップのSysListView32ハンドルを取得（アイコン選択状態の確認用）"""
+    user32 = ctypes.windll.user32
+    # Progman > SHELLDLL_DefView > SysListView32 の階層
+    progman = user32.FindWindowW("Progman", None)
+    if progman:
+        defview = user32.FindWindowExW(progman, 0, "SHELLDLL_DefView", None)
+        if defview:
+            lv = user32.FindWindowExW(defview, 0, "SysListView32", None)
+            if lv:
+                return lv
+    # WorkerWフォールバック（壁紙スライドショー時はProgman直下にない）
+    workerw = 0
+    while True:
+        workerw = user32.FindWindowExW(0, workerw, "WorkerW", None)
+        if not workerw:
+            break
+        defview = user32.FindWindowExW(workerw, 0, "SHELLDLL_DefView", None)
+        if defview:
+            lv = user32.FindWindowExW(defview, 0, "SysListView32", None)
+            if lv:
+                return lv
+    return 0
 
 
 def _calc_layout():
@@ -210,18 +254,27 @@ def _close_one_keyboard(hwnd):
     ctypes.windll.user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
 
 
-def _sync_keyboards():
-    """キーボード数をターミナル数に合わせる（増やす or 減らす）"""
-    n_wt = len(_find_wt_windows())
+def _launch_keyboards_exact(target_count):
+    """キーボードをぴったりtarget_count個にする（バックグラウンド用）"""
+    n_kb = len(_find_kb_windows())
+    need = target_count - n_kb
+    logging.debug(f"キーボード同期: 現在{n_kb}個, 目標{target_count}個, 起動{max(need,0)}個")
+    if need > 0:
+        for _ in range(need):
+            _launch_one_keyboard()
+        # 揃うまで待つ（最大20秒）
+        for _ in range(200):
+            time.sleep(0.1)
+            if len(_find_kb_windows()) >= target_count:
+                break
+    # 多すぎたら閉じる
     kb_hwnds = _find_kb_windows()
-    n_kb = len(kb_hwnds)
-    # 足りなければ追加
-    for _ in range(n_wt - n_kb):
-        _launch_one_keyboard()
-        time.sleep(0.3)
-    # 多ければ閉じる（後ろから）
-    for i in range(n_kb - n_wt):
-        _close_one_keyboard(kb_hwnds[-(i + 1)])
+    excess = len(kb_hwnds) - target_count
+    if excess > 0:
+        logging.debug(f"キーボード過多: {len(kb_hwnds)}個 > {target_count}個, {excess}個閉じる")
+        for i in range(excess):
+            _close_one_keyboard(kb_hwnds[-(i + 1)])
+    logging.debug(f"キーボード同期完了: {len(_find_kb_windows())}個")
 
 
 def open_terminals(folder_names):
@@ -229,18 +282,38 @@ def open_terminals(folder_names):
     if not folder_names:
         return
 
-    # 起動前のWTウィンドウを記録
+    # 起動後の合計WT数を事前計算
     before_hwnds = set(_find_wt_windows())
+    target_wt = len(before_hwnds) + len(folder_names)
     n = len(folder_names)
 
     # 新しいターミナルを起動（タブタイトル設定 + Claude自動起動）
     for name in folder_names:
         full_path = resolve_folder_path(name)
+        logging.debug(f"open_terminals: name={name!r}, path={full_path!r}, exists={os.path.isdir(full_path)}")
         env = os.environ.copy()
         env.pop('CLAUDECODE', None)
-        subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-                         env=env)
+        try:
+            subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
+                             creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                             env=env)
+            logging.debug(f"open_terminals: wt起動成功 {name!r}")
+        except FileNotFoundError:
+            logging.error("open_terminals: 'wt' が見つからない — フルパスで再試行")
+            # Microsoft Store版WTのフルパス
+            wt_path = os.path.join(os.environ.get('LOCALAPPDATA', ''),
+                                   'Microsoft', 'WindowsApps', 'wt.exe')
+            if os.path.exists(wt_path):
+                subprocess.Popen([wt_path, '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
+                                 creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                                 env=env)
+                logging.debug(f"open_terminals: フルパスwt起動成功 {name!r}")
+            else:
+                logging.error(f"open_terminals: wt.exeが見つかりません: {wt_path}")
+                raise
+        except Exception:
+            logging.error(f"open_terminals: 起動エラー:\n{traceback.format_exc()}")
+            raise
         time.sleep(0.5)
 
     # 新しいウィンドウが出揃うのを待つ
@@ -251,10 +324,14 @@ def open_terminals(folder_names):
         if len(new_hwnds) >= n:
             break
 
-    # キーボード数をターミナル数に同期してから整列
-    _sync_keyboards()
-    time.sleep(0.5)
+    # ターミナルだけ先に整列（体感速度優先）
     _reposition_windows()
+
+    # キーボードはバックグラウンドで目標数ぴったりに合わせる
+    def _bg():
+        _launch_keyboards_exact(target_wt)
+        _reposition_windows()
+    threading.Thread(target=_bg, daemon=True).start()
 
 
 def _find_wt_windows():
@@ -276,16 +353,20 @@ def _find_wt_windows():
 
 
 def bring_terminals_to_front():
-    """全WTウィンドウを再配置して最前面に出す（キーボード数も同期）"""
-    _sync_keyboards()
-    time.sleep(0.5)
+    """全WTウィンドウを再配置して最前面に出す（キーボード同期はバックグラウンド）"""
     _reposition_windows()
     user32 = ctypes.windll.user32
     hwnds = _find_wt_windows()
+    target_wt = len(hwnds)
     for hwnd in reversed(hwnds):
         user32.ShowWindow(hwnd, 9)  # SW_RESTORE
         user32.SetForegroundWindow(hwnd)
         time.sleep(0.05)
+    # キーボードはバックグラウンドでWT数にぴったり合わせる
+    def _bg():
+        _launch_keyboards_exact(target_wt)
+        _reposition_windows()
+    threading.Thread(target=_bg, daemon=True).start()
 
 
 def close_all_terminals():
@@ -311,6 +392,96 @@ def make_icon():
     return img
 
 
+# === デスクトップダブルクリック検出 ===
+
+# Win32 API argtypes設定（64bit環境で正しく引数を渡す）
+ctypes.windll.user32.WindowFromPoint.argtypes = [ctypes.wintypes.POINT]
+ctypes.windll.user32.WindowFromPoint.restype = ctypes.wintypes.HWND
+ctypes.windll.user32.CallNextHookEx.argtypes = [
+    ctypes.wintypes.HHOOK, ctypes.c_int, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM]
+ctypes.windll.user32.CallNextHookEx.restype = ctypes.c_long
+
+
+class DesktopClickDetector:
+    """デスクトップの空白部分のダブルクリックを検出してコールバックを呼ぶ"""
+    WH_MOUSE_LL = 14
+    WM_LBUTTONDOWN = 0x0201
+
+    class MSLLHOOKSTRUCT(ctypes.Structure):
+        _fields_ = [
+            ("pt", ctypes.wintypes.POINT),
+            ("mouseData", ctypes.wintypes.DWORD),
+            ("flags", ctypes.wintypes.DWORD),
+            ("time", ctypes.wintypes.DWORD),
+            ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+        ]
+
+    def __init__(self, on_desktop_dblclick, on_any_click=None):
+        self.on_desktop_dblclick = on_desktop_dblclick
+        self.on_any_click = on_any_click
+        self._last_click_time = 0
+        self._last_click_pos = (0, 0)
+        self._hook = None
+        # コールバック参照保持（GC防止）
+        self._hook_proc = ctypes.WINFUNCTYPE(
+            ctypes.c_long, ctypes.c_int,
+            ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM
+        )(self._low_level_mouse_proc)
+
+    def _low_level_mouse_proc(self, nCode, wParam, lParam):
+        user32 = ctypes.windll.user32
+        if nCode >= 0 and wParam == self.WM_LBUTTONDOWN:
+            # 任意クリックでポップアップを閉じる
+            if self.on_any_click:
+                self.on_any_click()
+            ms = ctypes.cast(lParam, ctypes.POINTER(self.MSLLHOOKSTRUCT)).contents
+            now = time.time()
+            x, y = ms.pt.x, ms.pt.y
+
+            # ダブルクリック判定（400ms以内、近い位置）
+            dt = now - self._last_click_time
+            dx = abs(x - self._last_click_pos[0])
+            dy = abs(y - self._last_click_pos[1])
+
+            if dt < 0.4 and dx < 10 and dy < 10:
+                # クリック先がデスクトップか判定
+                hwnd = user32.WindowFromPoint(ctypes.wintypes.POINT(x, y))
+                cls_buf = ctypes.create_unicode_buffer(256)
+                user32.GetClassNameW(hwnd, cls_buf, 256)
+                if cls_buf.value in ("WorkerW", "Progman", "SysListView32", "SHELLDLL_DefView"):
+                    # アイコン上ではないか判定（LVM_GETSELECTEDCOUNT）
+                    lv = _find_desktop_listview()
+                    if lv:
+                        sel = user32.SendMessageW(lv, 0x1032, 0, 0)
+                        if sel == 0:
+                            logging.debug(f"デスクトップダブルクリック検出: ({x}, {y})")
+                            self.on_desktop_dblclick(x, y)
+                self._last_click_time = 0  # リセット
+                return user32.CallNextHookEx(self._hook, nCode, wParam, lParam)
+
+            self._last_click_time = now
+            self._last_click_pos = (x, y)
+
+        return user32.CallNextHookEx(self._hook, nCode, wParam, lParam)
+
+    def start(self):
+        """フック用スレッドを起動（独自メッセージループ必須）"""
+        def hook_thread():
+            self._hook = ctypes.windll.user32.SetWindowsHookExW(
+                self.WH_MOUSE_LL, self._hook_proc, 0, 0
+            )
+            if not self._hook:
+                logging.error(f"SetWindowsHookExW failed: {ctypes.GetLastError()}")
+                return
+            logging.debug("デスクトップダブルクリック検出フック設定完了")
+            msg = ctypes.wintypes.MSG()
+            while ctypes.windll.user32.GetMessageW(ctypes.byref(msg), 0, 0, 0):
+                ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
+                ctypes.windll.user32.DispatchMessageW(ctypes.byref(msg))
+
+        threading.Thread(target=hook_thread, daemon=True).start()
+
+
 # === メインアプリ ===
 
 class App:
@@ -320,16 +491,193 @@ class App:
         self.icon = pystray.Icon("即ランチャー", make_icon(), "即ランチャー", self._build_menu())
         self.icon.HAS_DEFAULT_ACTION = False
         threading.Thread(target=self.icon.run, daemon=True).start()
+        # デスクトップダブルクリック検出
+        self._popup = None
+        self._submenu = None
+        self._popup_show_time = 0  # メニュー表示時刻（dismiss抑制用）
+        self._detector = DesktopClickDetector(
+            on_desktop_dblclick=lambda x, y: self.root.after(0, lambda: self._show_popup_menu(x, y)),
+            on_any_click=lambda: self.root.after(100, self._safe_dismiss_popup)
+        )
+        self._detector.start()
+        # WT数監視（3秒ごと、KBが多ければ閉じて再整列）
+        self._last_wt_count = len(_find_wt_windows())
+        self._poll_wt()
+
+    def _poll_wt(self):
+        """3秒ごとにWT数を監視、減ったらKBも減らして再整列"""
+        n_wt = len(_find_wt_windows())
+        n_kb = len(_find_kb_windows())
+        if n_wt != self._last_wt_count and n_kb > n_wt:
+            logging.debug(f"WT数変化検出: WT={n_wt}, KB={n_kb} → KB削減")
+            kb_hwnds = _find_kb_windows()
+            for i in range(n_kb - n_wt):
+                _close_one_keyboard(kb_hwnds[-(i + 1)])
+            # 少し待ってから再整列（閉じるアニメーション分）
+            self.root.after(300, _reposition_windows)
+        self._last_wt_count = n_wt
+        self.root.after(3000, self._poll_wt)
 
     def _open_single(self, folder_name):
         """シングル起動: 既存WT数チェック後、1つ起動して再配置"""
-        current_count = len(_find_wt_windows())
-        if current_count >= MAX_TERMINALS:
-            self.root.after(0, lambda: messagebox.showwarning("即ランチャー",
-                f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
-                f"Close some terminals first."))
-            return
-        open_terminals([folder_name])
+        logging.debug(f"_open_single 開始: {folder_name!r}")
+        try:
+            current_count = len(_find_wt_windows())
+            if current_count >= MAX_TERMINALS:
+                self.root.after(0, lambda: messagebox.showwarning("即ランチャー",
+                    f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
+                    f"Close some terminals first."))
+                return
+            open_terminals([folder_name])
+        except Exception:
+            logging.error(f"_open_single でエラー:\n{traceback.format_exc()}")
+            self.root.after(0, lambda: messagebox.showerror("即ランチャー",
+                f"起動エラー: {traceback.format_exc()}"))
+
+    def _safe_dismiss_popup(self):
+        """メニュー表示直後のdismissを無視する（ダブルクリック2打目対策）"""
+        if time.time() - self._popup_show_time < 0.5:
+            return  # 表示から500ms以内は無視
+        self._dismiss_popup()
+
+    def _dismiss_popup(self):
+        """ポップアップメニューを閉じる"""
+        if self._popup:
+            try:
+                self._popup.destroy()
+            except Exception:
+                pass
+            self._popup = None
+        if self._submenu:
+            try:
+                self._submenu.destroy()
+            except Exception:
+                pass
+            self._submenu = None
+
+    def _show_popup_menu(self, x, y):
+        """デスクトップダブルクリック時にカーソル位置にToplevelメニュー表示"""
+        self._dismiss_popup()
+        self._popup_show_time = time.time()
+
+        FONT = ("Segoe UI", 10)
+        BG = "#f0f0f0"
+        BG_HOVER = "#0078d4"
+        FG = "#1a1a1a"
+        FG_HOVER = "#ffffff"
+        SEP_COLOR = "#d0d0d0"
+        PAD_X = 20
+        PAD_Y = 4
+
+        win = tk.Toplevel(self.root)
+        win.overrideredirect(True)
+        win.attributes('-topmost', True)
+        win.configure(bg=BG, highlightbackground="#999999", highlightthickness=1)
+
+        def make_item(parent, label, command):
+            lbl = tk.Label(parent, text=label, font=FONT, bg=BG, fg=FG,
+                           anchor='w', padx=PAD_X, pady=PAD_Y, cursor='hand2')
+            lbl.pack(fill='x')
+            lbl.bind('<Enter>', lambda e: lbl.configure(bg=BG_HOVER, fg=FG_HOVER))
+            lbl.bind('<Leave>', lambda e: lbl.configure(bg=BG, fg=FG))
+            lbl.bind('<Button-1>', lambda e: (self._dismiss_popup(), command()))
+            return lbl
+
+        def make_separator(parent):
+            tk.Frame(parent, height=1, bg=SEP_COLOR).pack(fill='x', padx=4, pady=2)
+
+        def make_cascade(parent, label, items):
+            lbl = tk.Label(parent, text=f"{label}  \u25b6", font=FONT, bg=BG, fg=FG,
+                           anchor='w', padx=PAD_X, pady=PAD_Y, cursor='hand2')
+            lbl.pack(fill='x')
+            lbl.bind('<Enter>', lambda e: (lbl.configure(bg=BG_HOVER, fg=FG_HOVER),
+                                           self._show_submenu(lbl, items)))
+            lbl.bind('<Leave>', lambda e: lbl.configure(bg=BG, fg=FG))
+            return lbl
+
+        # OPEN → サブメニュー（Chatは除外）
+        apps_folders, other_folders = get_folders()
+        all_items = []
+        for name in apps_folders:
+            if name.lower() == 'chat':
+                continue
+            all_items.append(('item', name, lambda n=name: threading.Thread(
+                target=lambda: self._open_single(n), daemon=True).start()))
+        if other_folders:
+            if all_items:
+                all_items.append(('sep',))
+            for name in other_folders:
+                all_items.append(('item', name, lambda n=name: threading.Thread(
+                    target=lambda: self._open_single(n), daemon=True).start()))
+
+        make_cascade(win, "OPEN", all_items)
+        make_separator(win)
+        make_item(win, "Show All", lambda: bring_terminals_to_front())
+        make_separator(win)
+        make_item(win, "Chat", lambda: threading.Thread(
+            target=lambda: self._open_single("Chat"), daemon=True).start())
+        make_separator(win)
+        make_item(win, "Refresh", lambda: self.root.after(0, self._rebuild_menu))
+        make_item(win, "Close All", lambda: self._close_all())
+
+        # 画面外にはみ出さない位置調整
+        win.update_idletasks()
+        w = win.winfo_reqwidth()
+        h = win.winfo_reqheight()
+        scr_w = win.winfo_screenwidth()
+        scr_h = win.winfo_screenheight()
+        if x + w > scr_w:
+            x = scr_w - w
+        if y + h > scr_h:
+            y = scr_h - h
+        win.geometry(f"+{x}+{y}")
+
+        self._popup = win
+        self._submenu = None
+
+    def _show_submenu(self, anchor, items):
+        """サブメニュー（OPENの中身）を表示"""
+        if self._submenu:
+            try:
+                self._submenu.destroy()
+            except Exception:
+                pass
+
+        FONT = ("Segoe UI", 10)
+        BG = "#f0f0f0"
+        BG_HOVER = "#0078d4"
+        FG = "#1a1a1a"
+        FG_HOVER = "#ffffff"
+        SEP_COLOR = "#d0d0d0"
+        PAD_X = 20
+        PAD_Y = 4
+
+        sub = tk.Toplevel(self.root)
+        sub.overrideredirect(True)
+        sub.attributes('-topmost', True)
+        sub.configure(bg=BG, highlightbackground="#999999", highlightthickness=1)
+
+        for item in items:
+            if item[0] == 'sep':
+                tk.Frame(sub, height=1, bg=SEP_COLOR).pack(fill='x', padx=4, pady=2)
+            else:
+                _, label, cmd = item
+                lbl = tk.Label(sub, text=label, font=FONT, bg=BG, fg=FG,
+                               anchor='w', padx=PAD_X, pady=PAD_Y, cursor='hand2')
+                lbl.pack(fill='x')
+                lbl.bind('<Enter>', lambda e, l=lbl: l.configure(bg=BG_HOVER, fg=FG_HOVER))
+                lbl.bind('<Leave>', lambda e, l=lbl: l.configure(bg=BG, fg=FG))
+                lbl.bind('<Button-1>', lambda e, c=cmd: (self._dismiss_popup(), c()))
+
+        sub.update_idletasks()
+        ax = anchor.winfo_rootx() + anchor.winfo_width()
+        ay = anchor.winfo_rooty()
+        scr_w = sub.winfo_screenwidth()
+        sub_w = sub.winfo_reqwidth()
+        if ax + sub_w > scr_w:
+            ax = anchor.winfo_rootx() - sub_w
+        sub.geometry(f"+{ax}+{ay}")
+        self._submenu = sub
 
     def _close_all(self):
         """Close All: 確認2回してから全WT閉じる"""

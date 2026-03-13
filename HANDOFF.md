@@ -2,64 +2,61 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- アプリ名を「即ランチャー」に統一済み
-- DropboxからGoogleドライブへの移行対応完了（Win/Mac両方）
+- ブランチ `feature/mac-keyboard-sync` で作業中
+- 透明キーボードを即ランチャーに完全統合済み
+- **Mac版メニューをWindows版と統一済み**
+- **Mac版自動起動をSokuLauncher.app方式に修正済み**
 
 ## Windows版の構成
-- `folder_launcher_win.pyw` — メイン（pystray + tkinter）
+- `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
 - `即ランチャー.exe` — pythonw.exeコピー+アイコン・バージョン情報書き換え済み
 - `app.ico` — アイコン（トレイ・exe・ショートカット共通）
 - `python3.dll` / `python314.dll` / `python314._pth` — exe用ランタイム
-- `launcher.bat` — 1クリックセットアップ（既存停止・exe生成・WT設定・ショートカット・起動を全自動）
-- `_build_exe.py` — exe生成スクリプト（Win32 UpdateResourceW APIでバージョン情報書き換え）
-- `_setup_shortcuts.py` — ショートカット作成＆即ランチャー起動（日本語パス対応）
-- `_setup_wt.py` — WT設定（ライトテーマ・UDEV Gothic・タイトル維持）
+- `一発更新_即ランチャー.bat` — 1クリックセットアップ（即ランチャーEXE + 透明キーボードEXE両方ビルド）
+- `_build_exe.py` — exe生成スクリプト
+- `_setup_shortcuts.py` — ショートカット作成＆起動（透明キーボードのスタートアップ削除も実行）
+- `_setup_wt.py` — WT設定
+
+## デスクトップダブルクリックメニュー（Windows版）
+- WH_MOUSE_LLフック + LVM_GETSELECTEDCOUNT でデスクトップ空白ダブルクリック検出
+- **Toplevelウィンドウで自作メニュー**（tk_popupは外クリックで閉じないため廃止）
+- on_any_clickコールバックで任意クリック時にdismiss（メニュー+サブメニュー両方destroy）
+- メニュー構成: OPEN▶ / Show All / Chat / Refresh / Close All
+- ChatはOPENサブメニューから独立、トップレベルに配置
+- Quit項目は削除（誤爆防止）
+- DPI Aware有効化（Per-Monitor V2）でくっきり表示
+
+## デスクトップダブルクリックメニュー（Mac版）
+- NSEvent globalMonitor + CGWindowListCopyWindowInfo でデスクトップ空白ダブルクリック検出
+- NSMenuのpopUpMenuでネイティブメニュー表示（外クリックで自動的に閉じる）
+- メニュー構成: OPEN▶ / Show All / Chat(ellipsis.messageアイコン) / Refresh(arrow.clockwiseアイコン) / Close All
+- ChatはOPENサブメニューから独立、トップレベルに配置（SF Symbolsアイコン付き）
+- Quit項目は削除（誤爆防止）
+- 3秒ポーリングでターミナル閉じたらKBも自動削減+再整列
+
+## 透明キーボード統合
+- 透明キーボードは即ランチャーの一部（単体起動なし）
+- `一発更新_即ランチャー.bat` で透明キーボードEXEもPyInstallerで自動ビルド
+- キーボード起動数は `_launch_keyboards_exact(target_count)` で一元管理
+- WT数3秒ポーリングでターミナル閉じたらKBも自動削減+再整列
+- **透明キーボード.exeはPyInstaller onefile — .pyを修正してもEXE再ビルド必須**
 
 ## Mac版の構成
-- `folder_launcher.py` — メイン（rumps + AppKit）
-- `install_mac.sh` — Mac版インストールスクリプト（.app作成+LaunchAgent登録）
-- `/Applications/即ランチャー.app` — インストール先
-- `~/Library/Application Support/SokuLauncher/folder_launcher.py` — ローカルコピー（GDrive権限問題回避）
-- `~/Library/LaunchAgents/com.sokulauncher.agent.plist` — 自動起動+KeepAlive
-- メニューバーにカスタムアイコン（フォルダ+キーボード）で表示
-- Keyboardトグルメニュー追加
+- `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu）
+- `install_mac.sh` — Mac版インストールスクリプト
 
-## Mac版インストール仕様（セッション016で追加）
-- `install_mac.sh` 1つで全自動: .appバンドル作成 → LaunchAgent登録 → 起動
-- **自動起動**: RunAtLoad（Mac起動時に自動起動）
-- **自動復帰**: KeepAlive（落ちても5秒後に自動再起動）
-- **自動更新**: 起動時にGoogleドライブから最新版をローカルにコピー
-- ログ: `/tmp/sokulauncher_stdout.log`, `/tmp/sokulauncher_stderr.log`
-- Pythonパス: `/Applications/Xcode.app/Contents/Developer/usr/bin/python3`（rumpsインストール済み）
+## Mac版自動起動（SokuLauncher.app方式）
+- `~/Library/Application Support/SokuLauncher/SokuLauncher.app` をログイン項目に登録
+- .appの中身は `open -a Terminal start.sh` するだけのシェルスクリプト
+- Terminal.app経由で起動するためGDriveアクセス権を継承できる
+- LSUIElement=trueで見えないアプリ（Dockに表示されない）
+- 以前のstart.sh直接登録はテキストエディタで開かれてしまう問題があった
 
-## フォルダ探索の仕様
-- `_Apps2026` 直下のフォルダを表示
-- 除外: `images`, `text`, `テレパシーワード`, `others`, `_other_projects`, `即Claude`
-- マイドライブ直下の `_other-projects`（ハイフン）内のサブフォルダも表示対象
-- Win版・Mac版ともに対応済み
-
-## 右クリック/メニュー構成
-- OPEN → フォルダ一覧サブメニュー（1つ選んで即起動）
-- Show All（再配置＋前面表示）
-- ⌨ Keyboard（トグル）
-- Refresh / Close All / Quit
-
-## 多重起動防止
-- Windows: Mutex（SokuLauncher_Mutex）
-- Mac: なし（rumpsの制約）
-
-## 2026-03-12の変更: キーボード機能統合
-### 経緯
-- 透明キーボードMac版を単独でメニューバー常駐させていたが、即ランチャーとアイコン枠を奪い合う問題が発生（macOSのノッチ付きMacはメニューバーのスペースが限られている）
-- 解決策: 透明キーボードのメニューバー常駐を廃止し、即ランチャーに統合
-
-### 変更内容
-- 即ランチャーのアイコンを📂絵文字→フォルダ+キーボードのNSImage描画に変更（Template対応でダークモードOK）
-- メニューに「⌨ Keyboard」トグル項目を追加（クリックでキーボード起動/終了）
-- 透明キーボードMac版からメニューバー常駐機能を削除（即ランチャーに任せる）
-- 透明キーボードの単独LaunchAgent（com.nock.transparent-keyboard.plist）を削除
+## 今回の修正（セッション020）
+- Terminal二重起動バグ修正: 未起動時は`activate`→`do script in front window`でデフォルトウィンドウ再利用
+- Terminal復活バグ修正: `pgrep -x Terminal`で起動チェック（AppleScriptの`tell application`がTerminalを起こす問題を回避）
+- Terminal.appの`warnOnClose`設定を`2`(Never)に変更（Claude Code実行中のnodeプロセスがダイアログを出していた）
 
 ## 次のアクション
-- 透明キーボードMac版の横幅をターミナル幅に揃える（後で調整予定）
-- UDEV Gothicフォント自動インストールをlauncher.batに組み込むとベター
-- 次回 `install_mac.sh` 実行時にローカルコピーにも最新のアイコン+Keyboardトグルが反映される
+- feature/mac-keyboard-sync ブランチをmainにマージするか判断
+- UDEV Gothicフォント自動インストールをbatに組み込むとベター
