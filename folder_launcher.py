@@ -24,7 +24,6 @@ from AppKit import (
     NSAlert,
     NSAlertFirstButtonReturn,
     NSImage,
-    NSWorkspace,
 )
 from Quartz import (
     CGWindowListCopyWindowInfo,
@@ -324,18 +323,10 @@ def close_all_terminals():
 
 def _is_desktop_click(x, y):
     """クリック座標がデスクトップの空白部分かどうか判定
-    1. Finderが最前面アプリかチェック（デスクトップクリックは必ずFinderが受ける）
-    2. CGWindowListでクリック位置にウィンドウがないか確認
-    3. Finderの選択状態でアイコン上のクリックを除外
+    CGWindowListでクリック位置のウィンドウを前面から順にチェック:
+    - 通常アプリのウィンドウ(layer 0)が被ってたら → デスクトップではない
+    - 被ってなければ → クリック位置に最初にヒットするのがFinderのデスクトップか確認
     """
-    # まずFinderが最前面かチェック（デスクトップ以外でのクリックを除外）
-    try:
-        front_app = NSWorkspace.sharedWorkspace().frontmostApplication()
-        if front_app.bundleIdentifier() != 'com.apple.finder':
-            return False
-    except Exception:
-        return False
-
     windows = CGWindowListCopyWindowInfo(
         kCGWindowListOptionOnScreenOnly,
         kCGNullWindowID
@@ -349,13 +340,13 @@ def _is_desktop_click(x, y):
 
     for win in windows:
         layer = win.get('kCGWindowLayer', -1)
+        owner = win.get('kCGWindowOwnerName', '')
+
+        # システム系は無視
+        if owner in IGNORE_OWNERS:
+            continue
         # 通常ウィンドウ層（layer 0）のみチェック
         if layer != 0:
-            continue
-
-        owner = win.get('kCGWindowOwnerName', '')
-        # システム系のウィンドウは無視
-        if owner in IGNORE_OWNERS:
             continue
 
         bounds = win.get('kCGWindowBounds')
@@ -369,10 +360,20 @@ def _is_desktop_click(x, y):
 
         # クリック座標がこのウィンドウ内か
         if wx <= x <= wx + ww and wy <= y <= wy + wh:
-            # 通常アプリのウィンドウが被ってる → デスクトップではない
+            # Finderのウィンドウが被ってる場合もデスクトップではない（フォルダウィンドウ）
             return False
 
-    # Finderが最前面 + ウィンドウが被ってない → デスクトップ領域の可能性
+    # layer 0のウィンドウが被ってない → デスクトップ領域の可能性
+    # AppleScriptでFinderのinsertionLocationがデスクトップかチェック
+    try:
+        result = _run_applescript(
+            'tell application "Finder" to return POSIX path of (insertion location as alias)')
+        desktop_path = os.path.expanduser("~/Desktop")
+        if result.rstrip('/') != desktop_path.rstrip('/'):
+            return False  # Finderのフォーカスがデスクトップ以外 → 反応しない
+    except Exception:
+        return False
+
     # さらにFinderの選択状態をチェック（アイコン上のクリックを除外）
     try:
         result = _run_applescript(
