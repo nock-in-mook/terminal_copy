@@ -8775,3 +8775,9 @@ OK、完了！まとめ：
 - `claude --dangerously-skip-permissions` を入力してEnter送信するキー
 - /resumeの右隣に配置
 
+
+---
+## 即ランチャー_023_デスクトップクリック検知修正 (2026-03-13)
+- デスクトップ以外でもダブルクリックでメニューが出るバグを修正
+- frontmostApplication方式 → ターミナル経由で失敗、insertion location is desktop → オブジェクト比較失敗
+- 最終解: FinderのinsertionLocationのPOSIXパスを~/Desktopと比較する方式で解決

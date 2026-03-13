@@ -2,14 +2,15 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- 透明キーボードに「Claude」キーを追加済み（Mac版・Windows版両方）
-- キーの機能: `claude --dangerously-skip-permissions` を入力してEnter
+- デスクトップダブルクリック検知の誤検知バグを修正済み
+- 透明キーボードに「Claude」キー追加済み（Mac版・Windows版両方）
 
-## 今回の変更（セッション022）
-- 透明キーボードのRow 4（コマンド行）に「Claude」キーを追加
-- Mac版: `透明キーボード/mac/transparent_keyboard_mac.py` — 幅比率を調整して5キー収容
-- Windows版: `透明キーボード/transparent_keyboard.py` — 均等配分で5キー収容
-- Windows版は `一発更新_即ランチャー.bat` で透明キーボードEXE再ビルドが必要
+## 今回の変更（セッション023）
+- `_is_desktop_click` の判定ロジックを大幅改善
+- 試行1: `NSWorkspace.frontmostApplication()` でFinderチェック → ターミナル経由だとFinderが最前面にならず失敗
+- 試行2: AppleScriptの `insertion location is desktop` → オブジェクト比較が不一致で失敗
+- 最終解: `insertion location` のPOSIXパスを `~/Desktop` と比較 → 成功
+- これによりデスクトップの空白部分のみに反応し、フォルダウィンドウ内や他アプリ上では反応しなくなった
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
@@ -28,5 +29,4 @@
 - Terminal.app経由で起動するためGDriveアクセス権を継承できる
 
 ## 次のアクション
-- Windows側で一発更新バッチを実行して透明キーボードEXEを再ビルド
-- feature/mac-keyboard-sync ブランチをmainにマージするか判断
+- Windows側で一発更新バッチを実行して透明キーボードEXEを再ビルド（前回からの持ち越し）
