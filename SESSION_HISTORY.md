@@ -8768,3 +8768,10 @@ OK、完了！まとめ：
 - CGWindowListだけではFinderのデスクトップアイコンを検出できない問題を発見
 - Finderの選択状態チェック（AppleScript）を追加して空白部分のみメニュー表示に修正
 
+
+---
+## 即ランチャー_022_透明キーボードClaudeキー追加 (2026-03-13)
+- 透明キーボードのRow 4に「Claude」キーを追加（Mac版・Windows版）
+- `claude --dangerously-skip-permissions` を入力してEnter送信するキー
+- /resumeの右隣に配置
+
