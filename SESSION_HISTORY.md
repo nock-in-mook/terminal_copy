@@ -8738,3 +8738,12 @@ OK、完了！まとめ：
 - マウスフックon_any_clickで任意クリック時にdismiss
 - ChatをOPENから独立、トップレベルに配置
 - Quit項目削除（誤爆防止）
+
+---
+## 即ランチャー_018_Mac版メニュー改良 (2026-03-13)
+- Mac版メニューをWindows版と統一
+- ChatをOPENサブメニューから分離してトップレベルに配置（ellipsis.messageアイコン付き）
+- Refreshにarrow.clockwiseアイコン追加
+- Quit項目を削除（誤爆防止）
+- ターミナル数3秒ポーリングでKB自動削減+再整列を追加
+- Show All / Close Allの括弧除去
