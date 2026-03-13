@@ -55,16 +55,53 @@ chmod +x "$STARTER_SH"
 
 echo "起動スクリプト作成完了"
 
-# ログイン項目に登録（osascript経由）
+# 古いログイン項目を削除
+osascript -e '
+tell application "System Events"
+    try
+        delete login item "SokuLauncher"
+    end try
+    try
+        delete login item "start.sh"
+    end try
+end tell
+' 2>/dev/null || true
+
+# AppleScript .appを作成（ログイン項目用ラッパー）
+# .appならmacOSがアプリとして実行してくれる
+APP_DIR="$LOCAL_DIR/SokuLauncher.app/Contents/MacOS"
+mkdir -p "$APP_DIR"
+cat > "$LOCAL_DIR/SokuLauncher.app/Contents/Info.plist" << INFOPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>launcher</string>
+    <key>CFBundleIdentifier</key>
+    <string>${BUNDLE_ID}</string>
+    <key>CFBundleName</key>
+    <string>SokuLauncher</string>
+    <key>LSUIElement</key>
+    <true/>
+</dict>
+</plist>
+INFOPLIST
+
+cat > "$APP_DIR/launcher" << 'LAUNCHEREOF'
+#!/bin/bash
+open -a Terminal "$HOME/Library/Application Support/SokuLauncher/start.sh"
+LAUNCHEREOF
+chmod +x "$APP_DIR/launcher"
+
+echo "SokuLauncher.appを作成完了"
+
+# ログイン項目に.appを登録
 echo "ログイン項目に登録..."
+SOKU_APP="$LOCAL_DIR/SokuLauncher.app"
 osascript -e "
 tell application \"System Events\"
-    -- 既存の登録を削除
-    try
-        delete login item \"SokuLauncher\"
-    end try
-    -- Terminal.appでstart.shを実行するように登録
-    make login item at end with properties {name:\"SokuLauncher\", path:\"$STARTER_SH\", hidden:true}
+    make login item at end with properties {name:\"SokuLauncher\", path:\"$SOKU_APP\", hidden:true}
 end tell
 " 2>/dev/null || true
 
@@ -76,7 +113,7 @@ echo ""
 echo "=== インストール完了 ==="
 echo "- ローカルコピー: $LOCAL_PY"
 echo "- 起動スクリプト: $STARTER_SH"
-echo "- 自動起動: ON（ログイン時にTerminal.app経由で起動）"
+echo "- 自動起動: ON（ログイン項目: SokuLauncher.app）"
 echo "- 自動更新: ON（起動時にGoogleドライブから最新版をコピー）"
 echo "- ログ: /tmp/sokulauncher_stdout.log, /tmp/sokulauncher_stderr.log"
 echo ""
