@@ -496,7 +496,7 @@ class App:
         self._submenu = None
         self._detector = DesktopClickDetector(
             on_desktop_dblclick=lambda x, y: self.root.after(0, lambda: self._show_popup_menu(x, y)),
-            on_any_click=lambda: self.root.after(0, self._dismiss_popup)
+            on_any_click=lambda: self.root.after(200, self._dismiss_popup)
         )
         self._detector.start()
         # WT数監視（3秒ごと、KBが多ければ閉じて再整列）
