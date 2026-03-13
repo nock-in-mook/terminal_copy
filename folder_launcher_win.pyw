@@ -290,11 +290,30 @@ def open_terminals(folder_names):
     # 新しいターミナルを起動（タブタイトル設定 + Claude自動起動）
     for name in folder_names:
         full_path = resolve_folder_path(name)
+        logging.debug(f"open_terminals: name={name!r}, path={full_path!r}, exists={os.path.isdir(full_path)}")
         env = os.environ.copy()
         env.pop('CLAUDECODE', None)
-        subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-                         env=env)
+        try:
+            subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
+                             creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                             env=env)
+            logging.debug(f"open_terminals: wt起動成功 {name!r}")
+        except FileNotFoundError:
+            logging.error("open_terminals: 'wt' が見つからない — フルパスで再試行")
+            # Microsoft Store版WTのフルパス
+            wt_path = os.path.join(os.environ.get('LOCALAPPDATA', ''),
+                                   'Microsoft', 'WindowsApps', 'wt.exe')
+            if os.path.exists(wt_path):
+                subprocess.Popen([wt_path, '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
+                                 creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                                 env=env)
+                logging.debug(f"open_terminals: フルパスwt起動成功 {name!r}")
+            else:
+                logging.error(f"open_terminals: wt.exeが見つかりません: {wt_path}")
+                raise
+        except Exception:
+            logging.error(f"open_terminals: 起動エラー:\n{traceback.format_exc()}")
+            raise
         time.sleep(0.5)
 
     # 新しいウィンドウが出揃うのを待つ
@@ -500,13 +519,19 @@ class App:
 
     def _open_single(self, folder_name):
         """シングル起動: 既存WT数チェック後、1つ起動して再配置"""
-        current_count = len(_find_wt_windows())
-        if current_count >= MAX_TERMINALS:
-            self.root.after(0, lambda: messagebox.showwarning("即ランチャー",
-                f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
-                f"Close some terminals first."))
-            return
-        open_terminals([folder_name])
+        logging.debug(f"_open_single 開始: {folder_name!r}")
+        try:
+            current_count = len(_find_wt_windows())
+            if current_count >= MAX_TERMINALS:
+                self.root.after(0, lambda: messagebox.showwarning("即ランチャー",
+                    f"Already {current_count} terminals open (max {MAX_TERMINALS}).\n"
+                    f"Close some terminals first."))
+                return
+            open_terminals([folder_name])
+        except Exception:
+            logging.error(f"_open_single でエラー:\n{traceback.format_exc()}")
+            self.root.after(0, lambda: messagebox.showerror("即ランチャー",
+                f"起動エラー: {traceback.format_exc()}"))
 
     def _dismiss_popup(self):
         """ポップアップメニューを閉じる"""
