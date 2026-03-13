@@ -412,7 +412,7 @@ class DesktopLauncher(NSObject):
         menu = NSMenu.alloc().initWithTitle_("即ランチャー")
         menu.setAutoenablesItems_(False)
 
-        # --- OPEN サブメニュー ---
+        # --- OPEN サブメニュー（Chatは除外） ---
         apps_folders, other_folders = get_folders()
 
         open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
@@ -422,6 +422,8 @@ class DesktopLauncher(NSObject):
         open_submenu.setAutoenablesItems_(False)
 
         for name in apps_folders:
+            if name.lower() == 'chat':
+                continue
             item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
                 name, "openFolder:", "")
             item.setTarget_(self)
@@ -454,6 +456,16 @@ class DesktopLauncher(NSObject):
         # --- セパレータ ---
         menu.addItem_(NSMenuItem.separatorItem())
 
+        # --- Chat（トップレベルに独立配置） ---
+        chat_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Chat", "openFolder:", "")
+        chat_item.setTarget_(self)
+        chat_item.setEnabled_(True)
+        menu.addItem_(chat_item)
+
+        # --- セパレータ ---
+        menu.addItem_(NSMenuItem.separatorItem())
+
         # --- Refresh ---
         refresh_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
             "Refresh", "refresh:", "")
@@ -467,16 +479,6 @@ class DesktopLauncher(NSObject):
         close_item.setTarget_(self)
         close_item.setEnabled_(True)
         menu.addItem_(close_item)
-
-        # --- セパレータ ---
-        menu.addItem_(NSMenuItem.separatorItem())
-
-        # --- Quit ---
-        quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Quit", "quitApp:", "")
-        quit_item.setTarget_(self)
-        quit_item.setEnabled_(True)
-        menu.addItem_(quit_item)
 
         # メニューをクリック位置に表示
         menu.popUpMenuPositioningItem_atLocation_inView_(
@@ -526,8 +528,30 @@ class DesktopLauncher(NSObject):
         if alert2.runModal() == NSAlertFirstButtonReturn:
             close_all_terminals()
 
-    def quitApp_(self, sender):
-        NSApplication.sharedApplication().terminate_(None)
+
+# === ターミナル数ポーリング（3秒ごとにKB自動削減） ===
+
+def _poll_terminal_count(launcher):
+    """3秒ごとにターミナル数を監視、減ったらKBも減らして再整列"""
+    wt_count = _get_terminal_window_count()
+    kb_pids = _find_kb_pids()
+    kb_count = len(kb_pids)
+    if kb_count > wt_count:
+        # 余分なKBを閉じる（後ろから）
+        excess = kb_count - wt_count
+        for i in range(excess):
+            _close_one_keyboard(kb_pids[-(i + 1)])
+        # 0.3秒後に再整列（メインスレッドをブロックしない）
+        if wt_count > 0:
+            reposition_invoker = _Invoker.alloc().initWithBlock_(_reposition_windows)
+            NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+                0.3, reposition_invoker, "invoke:", None, False
+            )
+    # 次のポーリングをスケジュール
+    invoker = _Invoker.alloc().initWithBlock_(lambda: _poll_terminal_count(launcher))
+    NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+        3.0, invoker, "invoke:", None, False
+    )
 
 
 if __name__ == "__main__":
@@ -563,6 +587,9 @@ if __name__ == "__main__":
 
     launcher = DesktopLauncher.alloc().init()
     launcher.start()
+
+    # ターミナル数ポーリング開始（3秒ごと）
+    _poll_terminal_count(launcher)
 
     # クラッシュ保護
     try:
