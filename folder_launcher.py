@@ -24,6 +24,7 @@ from AppKit import (
     NSAlert,
     NSAlertFirstButtonReturn,
     NSImage,
+    NSWorkspace,
 )
 from Quartz import (
     CGWindowListCopyWindowInfo,
@@ -323,9 +324,18 @@ def close_all_terminals():
 
 def _is_desktop_click(x, y):
     """クリック座標がデスクトップの空白部分かどうか判定
-    CGWindowListCopyWindowInfoで画面上のウィンドウを前面から順にチェックし、
-    通常のアプリウィンドウ（layer 0）がクリック位置になければデスクトップと判定
+    1. Finderが最前面アプリかチェック（デスクトップクリックは必ずFinderが受ける）
+    2. CGWindowListでクリック位置にウィンドウがないか確認
+    3. Finderの選択状態でアイコン上のクリックを除外
     """
+    # まずFinderが最前面かチェック（デスクトップ以外でのクリックを除外）
+    try:
+        front_app = NSWorkspace.sharedWorkspace().frontmostApplication()
+        if front_app.bundleIdentifier() != 'com.apple.finder':
+            return False
+    except Exception:
+        return False
+
     windows = CGWindowListCopyWindowInfo(
         kCGWindowListOptionOnScreenOnly,
         kCGNullWindowID
@@ -362,7 +372,7 @@ def _is_desktop_click(x, y):
             # 通常アプリのウィンドウが被ってる → デスクトップではない
             return False
 
-    # layer 0 の通常ウィンドウが被ってない → デスクトップ領域
+    # Finderが最前面 + ウィンドウが被ってない → デスクトップ領域の可能性
     # さらにFinderの選択状態をチェック（アイコン上のクリックを除外）
     try:
         result = _run_applescript(
