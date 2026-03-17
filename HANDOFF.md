@@ -2,22 +2,15 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- 新しいMacで即ランチャーが動かない問題を修正済み
-- メニューバーにフォルダアイコンを追加済み
+- Mac版: GC問題修正済み、メニューバーアイコン追加済み、安定動作中
+- Windows版: マウスフックブロック問題を修正済み（セッション018）
 
-## 今回の変更（セッション024）
-### 修正: Hammerspoon GC問題
-- `local clickWatcher` → `SokuClickWatcher`（グローバル変数化）
-- `hs.timer.doEvery` の戻り値も `SokuWatchdogTimer` でグローバル保持
-- LuaのGCにeventtapが回収されて時間経過で止まる問題を解消
-- watchdogのnilチェック追加
-
-### 追加: メニューバーフォルダアイコン
-- `NSStatusItem` でメニューバーにフォルダアイコン（folder.fill）を設置
-- クリックするとOPEN/ShowAll/Chat/Refresh/CloseAllの同じメニューが出る
-- Hammerspoonが止まったときでもメニューバーから操作できるフォールバック
-- `_build_menu()` に共通化し、ダブルクリック・メニューバー両方で使用
-- Refresh押すとメニューバーのフォルダ一覧も再構築
+## 今回の変更（セッション018）
+### 修正: Windows版マウスフックブロック問題
+- デスクトップダブルクリック時にPCがカクカクになり即ランチャーが落ちる問題
+- **原因**: `_low_level_mouse_proc`内で`SendMessageW`を呼んでいた → Explorerが重いとフックがブロック → Windows全体のマウス入力がフリーズ → Windowsがフックを強制解除
+- **対策1**: デスクトップ判定処理をフック外の別スレッドに移動（フックは座標だけ取得して即座にreturn）
+- **対策2**: `SendMessageW` → `SendMessageTimeoutW`（200msタイムアウト、SMTO_ABORTIFHUNG）
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem）
@@ -28,11 +21,6 @@
 - `~/Library/Application Support/SokuLauncher/SokuLauncher.app` をログイン項目に登録
 - start.sh起動時にGDriveから最新の `folder_launcher.py` と `hammerspoon_init.lua` を自動コピー
 - 新しいMac: `bash install_mac.sh` 一発でOK
-
-## 安定性
-- 再起動時: SokuLauncher.appがログイン項目から自動起動
-- GC問題: グローバル変数化で解消済み
-- 万が一の時: メニューバーアイコンからフォールバック操作可能
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
