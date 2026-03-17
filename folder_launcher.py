@@ -24,6 +24,8 @@ from AppKit import (
     NSAlert,
     NSAlertFirstButtonReturn,
     NSImage,
+    NSStatusBar,
+    NSVariableStatusItemLength,
 )
 from Quartz import (
     CGWindowListCopyWindowInfo,
@@ -413,135 +415,135 @@ class DesktopLauncher(NSObject):
         return self
 
     def start(self):
-        """イベント監視を開始"""
-        NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
-            NSLeftMouseDownMask,
-            self._on_global_click
+        """イベント監視を開始（Hammerspoonからのトリガーをポーリング）"""
+        # トリガーファイルを監視するタイマー（0.1秒ごと）
+        invoker = _Invoker.alloc().initWithBlock_(self._check_trigger)
+        self._trigger_timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+            0.1, invoker, "invoke:", None, True
         )
         # 3秒ごとにターミナルタイトルをフォルダ名で上書き
-        invoker = _Invoker.alloc().initWithBlock_(_refresh_titles)
+        invoker2 = _Invoker.alloc().initWithBlock_(_refresh_titles)
         self._title_timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-            3.0, invoker, "invoke:", None, True
+            3.0, invoker2, "invoke:", None, True
         )
-        print("即ランチャー起動: デスクトップダブルクリック待機中", flush=True)
+        # メニューバーアイコン
+        self._setup_status_item()
+        print("即ランチャー起動: デスクトップダブルクリック待機中（Hammerspoon連携）", flush=True)
 
     @objc.python_method
-    def _on_global_click(self, event):
-        """グローバルマウスクリックハンドラ"""
-        # クリック座標（macOS座標: 左下原点）
-        loc = NSEvent.mouseLocation()
-        # CGWindowListは左上原点なので変換
-        screen = NSScreen.mainScreen()
-        screen_h = screen.frame().size.height
-        cg_x = loc.x
-        cg_y = screen_h - loc.y
+    def _setup_status_item(self):
+        """メニューバーにアイコンを設置"""
+        self._status_item = NSStatusBar.systemStatusBar().statusItemWithLength_(
+            NSVariableStatusItemLength
+        )
+        icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_("folder.fill", None)
+        if icon:
+            icon.setTemplate_(True)  # ダークモード対応
+            self._status_item.button().setImage_(icon)
+        self._status_item.button().setToolTip_("即ランチャー")
+        self._rebuild_status_menu()
 
-        now = time.time()
-        dx = abs(cg_x - self._last_click_x)
-        dy = abs(cg_y - self._last_click_y)
+    @objc.python_method
+    def _rebuild_status_menu(self):
+        """ステータスアイテムのメニューを再構築"""
+        self._status_item.setMenu_(self._build_menu())
 
-        # ダブルクリック判定: 0.4秒以内、5px以内
-        if now - self._last_click_time < 0.4 and dx < 5 and dy < 5:
-            # ダブルクリック検出 → デスクトップか判定
-            if _is_desktop_click(cg_x, cg_y):
+    @objc.python_method
+    def _check_trigger(self):
+        """Hammerspoonが書いたトリガーファイルを監視してメニューを表示"""
+        trigger = "/tmp/sokulauncher_trigger"
+        if not os.path.exists(trigger):
+            return
+        try:
+            with open(trigger, "r") as f:
+                content = f.read().strip()
+            os.remove(trigger)
+            # 座標を読む（Hammerspoon座標: 左上原点、macOS AppKit座標: 左下原点）
+            parts = content.split(",")
+            if len(parts) == 2:
+                x = float(parts[0])
+                hs_y = float(parts[1])
+                # HammerspoonはY軸が上から下、AppKitは下から上なので変換
+                screen_h = NSScreen.mainScreen().frame().size.height
+                y = screen_h - hs_y
+                from Foundation import NSMakePoint
+                loc = NSMakePoint(x, y)
                 self._show_menu(loc)
-            self._last_click_time = 0  # リセット
-        else:
-            self._last_click_time = now
-            self._last_click_x = cg_x
-            self._last_click_y = cg_y
+        except Exception as e:
+            print(f"trigger error: {e}", flush=True)
 
     @objc.python_method
     def _show_menu(self, location):
-        """ポップアップメニューを表示"""
+        """ポップアップメニューをクリック位置に表示"""
         app = NSApplication.sharedApplication()
         app.activateIgnoringOtherApps_(True)
+        menu = self._build_menu()
+        menu.popUpMenuPositioningItem_atLocation_inView_(None, location, None)
 
+    # === メニューアクション（ObjCセレクタ） ===
+
+    @objc.python_method
+    def _build_menu(self):
+        """ポップアップ用メニューを構築して返す（ダブルクリック・メニューバー共通）"""
         menu = NSMenu.alloc().initWithTitle_("即ランチャー")
         menu.setAutoenablesItems_(False)
 
-        # --- OPEN サブメニュー（Chatは除外） ---
         apps_folders, other_folders = get_folders()
 
-        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "OPEN", None, "")
+        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("OPEN", None, "")
         open_item.setEnabled_(True)
         open_submenu = NSMenu.alloc().initWithTitle_("OPEN")
         open_submenu.setAutoenablesItems_(False)
-
         for name in apps_folders:
             if name.lower() == 'chat':
                 continue
-            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-                name, "openFolder:", "")
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(name, "openFolder:", "")
             item.setTarget_(self)
             item.setEnabled_(True)
             open_submenu.addItem_(item)
-
         if other_folders and apps_folders:
             open_submenu.addItem_(NSMenuItem.separatorItem())
-
         for name in other_folders:
-            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-                name, "openFolder:", "")
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(name, "openFolder:", "")
             item.setTarget_(self)
             item.setEnabled_(True)
             open_submenu.addItem_(item)
-
         open_item.setSubmenu_(open_submenu)
         menu.addItem_(open_item)
 
-        # --- セパレータ ---
         menu.addItem_(NSMenuItem.separatorItem())
 
-        # --- Show All ---
-        show_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Show All", "showAll:", "")
+        show_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Show All", "showAll:", "")
         show_item.setTarget_(self)
         show_item.setEnabled_(True)
         menu.addItem_(show_item)
 
-        # --- セパレータ ---
         menu.addItem_(NSMenuItem.separatorItem())
 
-        # --- Chat（トップレベルに独立配置） ---
-        chat_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Chat", "openFolder:", "")
+        chat_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Chat", "openFolder:", "")
         chat_item.setTarget_(self)
         chat_item.setEnabled_(True)
-        chat_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-            "ellipsis.message", None)
+        chat_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_("ellipsis.message", None)
         if chat_icon:
             chat_item.setImage_(chat_icon)
         menu.addItem_(chat_item)
 
-        # --- セパレータ ---
         menu.addItem_(NSMenuItem.separatorItem())
 
-        # --- Refresh ---
-        refresh_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Refresh", "refresh:", "")
+        refresh_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Refresh", "refresh:", "")
         refresh_item.setTarget_(self)
         refresh_item.setEnabled_(True)
-        refresh_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-            "arrow.clockwise", None)
+        refresh_icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_("arrow.clockwise", None)
         if refresh_icon:
             refresh_item.setImage_(refresh_icon)
         menu.addItem_(refresh_item)
 
-        # --- Close All ---
-        close_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Close All", "closeAll:", "")
+        close_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Close All", "closeAll:", "")
         close_item.setTarget_(self)
         close_item.setEnabled_(True)
         menu.addItem_(close_item)
 
-        # メニューをクリック位置に表示
-        menu.popUpMenuPositioningItem_atLocation_inView_(
-            None, location, None
-        )
-
-    # === メニューアクション（ObjCセレクタ） ===
+        return menu
 
     def openFolder_(self, sender):
         """フォルダを選んでターミナル起動"""
@@ -558,8 +560,8 @@ class DesktopLauncher(NSObject):
         bring_terminals_to_front()
 
     def refresh_(self, sender):
-        """フォルダ一覧は毎回メニュー表示時に取得するので何もしない"""
-        pass
+        """メニューバーのフォルダ一覧を再構築"""
+        self._rebuild_status_menu()
 
     def closeAll_(self, sender):
         """全ターミナル＋キーボードを閉じる（確認2回）"""
