@@ -428,6 +428,30 @@ class DesktopClickDetector:
             ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM
         )(self._low_level_mouse_proc)
 
+    def _check_desktop_and_fire(self, x, y):
+        """フック外でデスクトップ判定を行う（SendMessageWがブロックしてもフックに影響しない）"""
+        try:
+            user32 = ctypes.windll.user32
+            hwnd = user32.WindowFromPoint(ctypes.wintypes.POINT(x, y))
+            cls_buf = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(hwnd, cls_buf, 256)
+            if cls_buf.value in ("WorkerW", "Progman", "SysListView32", "SHELLDLL_DefView"):
+                # アイコン上ではないか判定（LVM_GETSELECTEDCOUNT）
+                lv = _find_desktop_listview()
+                if lv:
+                    # タイムアウト付きでExplorerに問い合わせ（最大200ms）
+                    result = ctypes.wintypes.DWORD(0)
+                    ok = user32.SendMessageTimeoutW(
+                        lv, 0x1032, 0, 0,
+                        0x0002,  # SMTO_ABORTIFHUNG
+                        200,     # タイムアウト200ms
+                        ctypes.byref(result))
+                    if ok and result.value == 0:
+                        logging.debug(f"デスクトップダブルクリック検出: ({x}, {y})")
+                        self.on_desktop_dblclick(x, y)
+        except Exception:
+            logging.error(f"デスクトップ判定エラー:\n{traceback.format_exc()}")
+
     def _low_level_mouse_proc(self, nCode, wParam, lParam):
         user32 = ctypes.windll.user32
         if nCode >= 0 and wParam == self.WM_LBUTTONDOWN:
@@ -444,18 +468,9 @@ class DesktopClickDetector:
             dy = abs(y - self._last_click_pos[1])
 
             if dt < 0.4 and dx < 10 and dy < 10:
-                # クリック先がデスクトップか判定
-                hwnd = user32.WindowFromPoint(ctypes.wintypes.POINT(x, y))
-                cls_buf = ctypes.create_unicode_buffer(256)
-                user32.GetClassNameW(hwnd, cls_buf, 256)
-                if cls_buf.value in ("WorkerW", "Progman", "SysListView32", "SHELLDLL_DefView"):
-                    # アイコン上ではないか判定（LVM_GETSELECTEDCOUNT）
-                    lv = _find_desktop_listview()
-                    if lv:
-                        sel = user32.SendMessageW(lv, 0x1032, 0, 0)
-                        if sel == 0:
-                            logging.debug(f"デスクトップダブルクリック検出: ({x}, {y})")
-                            self.on_desktop_dblclick(x, y)
+                # デスクトップ判定は別スレッドで実行（フックをブロックしない）
+                threading.Thread(target=self._check_desktop_and_fire,
+                                 args=(x, y), daemon=True).start()
                 self._last_click_time = 0  # リセット
                 return user32.CallNextHookEx(self._hook, nCode, wParam, lParam)
 
