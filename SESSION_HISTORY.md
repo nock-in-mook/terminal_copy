@@ -8781,3 +8781,6 @@ OK、完了！まとめ：
 - デスクトップ以外でもダブルクリックでメニューが出るバグを修正
 - frontmostApplication方式 → ターミナル経由で失敗、insertion location is desktop → オブジェクト比較失敗
 - 最終解: FinderのinsertionLocationのPOSIXパスを~/Desktopと比較する方式で解決
+
+---
+## 即ランチャー_024_GC修正とメニューバーアイコン追加 (2026-03-17)

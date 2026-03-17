@@ -1,36 +1,51 @@
 #!/bin/bash
 # 即ランチャー Mac版インストールスクリプト
+# - Hammerspoon（クリック検知）+ Python（メニュー表示）の2段構成
 # - GDriveからスクリプトをローカルにコピー
-# - Terminal.app経由で起動（GDriveアクセス権を継承）
 # - ログイン項目に登録して自動起動
 # 使い方: bash install_mac.sh
-
-set -e
 
 BUNDLE_ID="com.sokulauncher.agent"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCAL_DIR="$HOME/Library/Application Support/SokuLauncher"
 LOCAL_PY="$LOCAL_DIR/folder_launcher.py"
 STARTER_SH="$LOCAL_DIR/start.sh"
-PLIST_PATH="$HOME/Library/LaunchAgents/${BUNDLE_ID}.plist"
+HS_CONFIG="$HOME/.hammerspoon/init.lua"
 PYTHON="/usr/bin/python3"
 
 echo "=== 即ランチャー Mac版インストール ==="
 
-# 既存のLaunchAgentを停止・削除
-if launchctl list "$BUNDLE_ID" &>/dev/null; then
-    echo "既存のLaunchAgentを停止..."
-    launchctl bootout "gui/$(id -u)/$BUNDLE_ID" 2>/dev/null || true
-    sleep 1
-fi
-rm -f "$PLIST_PATH"
+# --- Step 1: pyobjc インストール ---
+echo "[1/5] pyobjcを確認..."
+"$PYTHON" -c "import objc" 2>/dev/null || {
+    echo "pyobjcをインストール中..."
+    "$PYTHON" -m pip install pyobjc-core pyobjc-framework-Cocoa pyobjc-framework-Quartz --quiet
+}
+echo "OK"
 
-# 既存プロセスを停止
+# --- Step 2: Hammerspoon インストール ---
+echo "[2/5] Hammerspoonを確認..."
+if [ ! -d "/Applications/Hammerspoon.app" ]; then
+    echo "Hammerspoonをインストール中..."
+    if command -v brew &>/dev/null; then
+        brew install --cask hammerspoon
+    else
+        echo "ERROR: Homebrewが見つかりません。https://brew.sh からインストールしてください"
+        exit 1
+    fi
+fi
+echo "OK"
+
+# --- Step 3: Hammerspoon設定をコピー ---
+echo "[3/5] Hammerspoon設定をセットアップ..."
+mkdir -p "$HOME/.hammerspoon"
+cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG"
+echo "OK"
+
+# --- Step 4: Pythonスクリプトをローカルにコピー ---
+echo "[4/5] スクリプトをローカルにコピー..."
 pkill -f "folder_launcher.py" 2>/dev/null || true
 sleep 0.5
-
-# スクリプトをローカルにコピー
-echo "スクリプトをローカルにコピー: $LOCAL_DIR"
 mkdir -p "$LOCAL_DIR"
 cp "$SCRIPT_DIR/folder_launcher.py" "$LOCAL_PY"
 
@@ -44,31 +59,23 @@ LOCAL_PY="$LOCAL_PY"
 if [ -f "\$GDRIVE_PY" ]; then
     cp "\$GDRIVE_PY" "\$LOCAL_PY" 2>/dev/null || true
 fi
+# Hammerspoon設定も最新版をコピー
+if [ -f "$SCRIPT_DIR/hammerspoon_init.lua" ]; then
+    cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG" 2>/dev/null || true
+fi
 
-# バックグラウンドで起動し、シェルから切り離してウィンドウを閉じる
 nohup "$PYTHON" "\$LOCAL_PY" > /tmp/sokulauncher_stdout.log 2> /tmp/sokulauncher_stderr.log &
 disown
 osascript -e 'tell application "Terminal" to close front window' 2>/dev/null &
 exit 0
 ENDSCRIPT
 chmod +x "$STARTER_SH"
+echo "OK"
 
-echo "起動スクリプト作成完了"
+# --- Step 5: ログイン項目に登録 ---
+echo "[5/5] ログイン項目に登録..."
 
-# 古いログイン項目を削除
-osascript -e '
-tell application "System Events"
-    try
-        delete login item "SokuLauncher"
-    end try
-    try
-        delete login item "start.sh"
-    end try
-end tell
-' 2>/dev/null || true
-
-# AppleScript .appを作成（ログイン項目用ラッパー）
-# .appならmacOSがアプリとして実行してくれる
+# SokuLauncher.app を作成
 APP_DIR="$LOCAL_DIR/SokuLauncher.app/Contents/MacOS"
 mkdir -p "$APP_DIR"
 cat > "$LOCAL_DIR/SokuLauncher.app/Contents/Info.plist" << INFOPLIST
@@ -94,27 +101,41 @@ open -a Terminal "$HOME/Library/Application Support/SokuLauncher/start.sh"
 LAUNCHEREOF
 chmod +x "$APP_DIR/launcher"
 
-echo "SokuLauncher.appを作成完了"
-
-# ログイン項目に.appを登録
-echo "ログイン項目に登録..."
-SOKU_APP="$LOCAL_DIR/SokuLauncher.app"
+# ログイン項目を登録（SokuLauncher + Hammerspoon）
 osascript -e "
 tell application \"System Events\"
-    make login item at end with properties {name:\"SokuLauncher\", path:\"$SOKU_APP\", hidden:true}
+    try
+        delete login item \"SokuLauncher\"
+    end try
+    try
+        delete login item \"Hammerspoon\"
+    end try
+    make login item at end with properties {name:\"SokuLauncher\", path:\"$LOCAL_DIR/SokuLauncher.app\", hidden:true}
+    make login item at end with properties {name:\"Hammerspoon\", path:\"/Applications/Hammerspoon.app\", hidden:true}
 end tell
 " 2>/dev/null || true
+echo "OK"
 
-# 今すぐ起動（Terminal.app経由）
-echo "即ランチャーを起動..."
+# --- 起動 ---
+echo ""
+echo "Hammerspoonを起動中..."
+pkill -x Hammerspoon 2>/dev/null || true
+sleep 0.5
+open -a Hammerspoon
+
+echo "即ランチャーを起動中..."
+sleep 1
 open -a Terminal "$STARTER_SH"
 
 echo ""
 echo "=== インストール完了 ==="
-echo "- ローカルコピー: $LOCAL_PY"
-echo "- 起動スクリプト: $STARTER_SH"
-echo "- 自動起動: ON（ログイン項目: SokuLauncher.app）"
-echo "- 自動更新: ON（起動時にGoogleドライブから最新版をコピー）"
-echo "- ログ: /tmp/sokulauncher_stdout.log, /tmp/sokulauncher_stderr.log"
 echo ""
-echo "デスクトップをダブルクリックしてメニューが出ればOKです。"
+echo "【重要】次の2つをシステム設定で許可してください："
+echo "  システム設定 → プライバシーとセキュリティ → アクセシビリティ"
+echo "  → Hammerspoon.app を追加してON"
+echo "  → /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework"
+echo "    /Versions/3.9/Resources/Python.app を追加してON"
+echo ""
+echo "許可ダイアログが自動で出る場合はそのまま「許可」を押してください。"
+echo ""
+echo "設定後、デスクトップをダブルクリックしてメニューが出ればOKです。"
