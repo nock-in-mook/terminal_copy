@@ -422,6 +422,9 @@ class DesktopClickDetector:
         self._last_click_time = 0
         self._last_click_pos = (0, 0)
         self._hook = None
+        # フック→メインスレッド通信用フラグ（フック内では値セットのみ）
+        self._pending_click = False
+        self._pending_dblclick = None  # (x, y) or None
         # コールバック参照保持（GC防止）
         self._hook_proc = ctypes.WINFUNCTYPE(
             ctypes.c_long, ctypes.c_int,
@@ -453,11 +456,8 @@ class DesktopClickDetector:
             logging.error(f"デスクトップ判定エラー:\n{traceback.format_exc()}")
 
     def _low_level_mouse_proc(self, nCode, wParam, lParam):
-        user32 = ctypes.windll.user32
+        """フックコールバック — 最速でreturnする（重い処理は一切しない）"""
         if nCode >= 0 and wParam == self.WM_LBUTTONDOWN:
-            # 任意クリックでポップアップを閉じる
-            if self.on_any_click:
-                self.on_any_click()
             ms = ctypes.cast(lParam, ctypes.POINTER(self.MSLLHOOKSTRUCT)).contents
             now = time.time()
             x, y = ms.pt.x, ms.pt.y
@@ -468,16 +468,15 @@ class DesktopClickDetector:
             dy = abs(y - self._last_click_pos[1])
 
             if dt < 0.4 and dx < 10 and dy < 10:
-                # デスクトップ判定は別スレッドで実行（フックをブロックしない）
-                threading.Thread(target=self._check_desktop_and_fire,
-                                 args=(x, y), daemon=True).start()
-                self._last_click_time = 0  # リセット
-                return user32.CallNextHookEx(self._hook, nCode, wParam, lParam)
+                # フラグだけセット（処理はメインスレッドのポーリングで拾う）
+                self._pending_dblclick = (x, y)
+                self._last_click_time = 0
+            else:
+                self._pending_click = True
+                self._last_click_time = now
+                self._last_click_pos = (x, y)
 
-            self._last_click_time = now
-            self._last_click_pos = (x, y)
-
-        return user32.CallNextHookEx(self._hook, nCode, wParam, lParam)
+        return ctypes.windll.user32.CallNextHookEx(self._hook, nCode, wParam, lParam)
 
     def start(self):
         """フック用スレッドを起動（独自メッセージループ必須）"""
@@ -515,9 +514,23 @@ class App:
             on_any_click=lambda: self.root.after(100, self._safe_dismiss_popup)
         )
         self._detector.start()
+        # フックからのイベントをポーリングで拾う（フック内は最速return）
+        self._poll_hook_events()
         # WT数監視（3秒ごと、KBが多ければ閉じて再整列）
         self._last_wt_count = len(_find_wt_windows())
         self._poll_wt()
+
+    def _poll_hook_events(self):
+        """30msごとにフックからのイベントフラグをチェック（フック内を最速にするため）"""
+        if self._detector._pending_click:
+            self._detector._pending_click = False
+            self._safe_dismiss_popup()
+        if self._detector._pending_dblclick:
+            x, y = self._detector._pending_dblclick
+            self._detector._pending_dblclick = None
+            threading.Thread(target=self._detector._check_desktop_and_fire,
+                             args=(x, y), daemon=True).start()
+        self.root.after(30, self._poll_hook_events)
 
     def _poll_wt(self):
         """3秒ごとにWT数を監視、減ったらKBも減らして再整列"""
