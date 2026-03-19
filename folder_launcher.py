@@ -240,16 +240,44 @@ def _close_all_keyboards():
         _close_one_keyboard(pid)
 
 
+# === tmuxゾンビ掃除 ===
+
+def _cleanup_zombie_tmux_sessions():
+    """claudeが動いていないtmuxセッションを一括kill（フォルダを開くたびに実行）"""
+    try:
+        # tmuxサーバーが動いていなければ何もしない
+        result = subprocess.run(['tmux', 'list-sessions', '-F', '#{session_name}'],
+                                capture_output=True, text=True, timeout=3)
+        if result.returncode != 0:
+            return
+        for session_name in result.stdout.strip().split('\n'):
+            if not session_name:
+                continue
+            # セッション内のプロセスを確認
+            pane_result = subprocess.run(
+                ['tmux', 'list-panes', '-t', session_name, '-F', '#{pane_current_command}'],
+                capture_output=True, text=True, timeout=3)
+            if pane_result.returncode != 0:
+                continue
+            # claudeが動いていなければゾンビ → kill
+            if 'claude' not in pane_result.stdout:
+                subprocess.run(['tmux', 'kill-session', '-t', session_name],
+                               capture_output=True, timeout=3)
+                NSLog(f"ゾンビtmuxセッションをkill: {session_name}")
+    except Exception as e:
+        NSLog(f"tmuxゾンビ掃除でエラー（無視）: {e}")
+
+
 # === メイン関数 ===
 
 def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
     terminal_was_running = _is_terminal_running()
+    # 全tmuxセッションからゾンビ（claudeが動いていないもの）を一括掃除
+    _cleanup_zombie_tmux_sessions()
     # tmuxセッション名（ドットを除去、tmuxはドット入りセッション名を嫌う）
     tmux_session = folder_name.replace('.', '_')
-    # 既存セッションがあるがclaudeが動いていない（ゾンビ）ならkillして新規作成
-    # ×ボタンで閉じた後などにゾンビセッションが残るケースへの対処
     tmux_cmd = (
         f"if tmux has-session -t '{tmux_session}' 2>/dev/null; then "
         f"  if tmux list-panes -t '{tmux_session}' -F '#{{pane_current_command}}' 2>/dev/null | grep -q claude; then "
