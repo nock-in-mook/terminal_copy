@@ -2,21 +2,21 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- Mac版: tmux復帰機能追加済み、Hammerspoon自動リロード追加済み、安定動作中
+- Mac版: tmux復帰機能＋ゾンビ掃除追加済み、Hammerspoon自動リロード追加済み、安定動作中
 - Windows版: マウスフック完全軽量化済み（セッション019）
 
-## 今回の変更（セッション026）
-### Hammerspoon設定の自動リロード
-- **問題**: 別Macでinit.luaを編集→GDrive同期→このMacのHammerspoonは古い設定のまま動き続ける
-- **対策**: `hs.pathwatcher`でGDrive上の`hammerspoon_init.lua`を監視。変更検知→自動コピー→自動リロード
-- **変更ファイル**: `hammerspoon_init.lua`
+## 今回の変更（セッション027）
+### tmuxゾンビセッション対策
+- ×ボタンでターミナルを閉じるとtmuxセッションがデタッチ状態で残る問題に対応
+- フォルダを開くたびに全tmuxセッションをスキャン、デタッチ状態（session_attached=0）のものを一括kill
+- アタッチ中（作業中・入力待ち含む）のセッションは影響なし
 
-### 再起動時の注意（セッション026で判明）
-- Claude Code内から`start.sh`を直接実行すると、start.sh内の`osascript close front window`でターミナルが閉じられてセッションが落ちる
-- 再起動時はGDriveからコピー→nohupで直接起動すること
+### 透明キーボードのAPPSボタン → /exitボタンに変更
+- Mac版・Windows版の両方で対応
+- ボタンを押すとターミナルに `/exit` + Enter を送信 → Claude Code終了 → tmuxセッション自動消滅
 
 ## Mac版の構成
-- `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携）
+- `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携 + ゾンビ掃除）
 - `hammerspoon_init.lua` — Hammerspoon設定（グローバル変数でGC対策済み、GDrive監視で自動リロード）
 - `install_mac.sh` — Mac版インストールスクリプト（tmux自動インストール含む）
 
