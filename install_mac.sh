@@ -23,6 +23,19 @@ echo "[1/5] pyobjcを確認..."
 }
 echo "OK"
 
+# --- Step 1.5: tmux インストール ---
+echo "[1.5/5] tmuxを確認..."
+if ! command -v tmux &>/dev/null; then
+    echo "tmuxをインストール中..."
+    if command -v brew &>/dev/null; then
+        brew install tmux
+    else
+        echo "ERROR: Homebrewが見つかりません。https://brew.sh からインストールしてください"
+        exit 1
+    fi
+fi
+echo "OK"
+
 # --- Step 2: Hammerspoon インストール ---
 echo "[2/5] Hammerspoonを確認..."
 if [ ! -d "/Applications/Hammerspoon.app" ]; then
