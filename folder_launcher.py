@@ -246,6 +246,15 @@ def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
     terminal_was_running = _is_terminal_running()
+    # tmuxセッション名（ドットを除去、tmuxはドット入りセッション名を嫌う）
+    tmux_session = folder_name.replace('.', '_')
+    # tmuxセッションが生きていれば再接続、なければ新規作成（シングルクォートでエスケープ回避）
+    tmux_cmd = (
+        f"tmux has-session -t '{tmux_session}' 2>/dev/null "
+        f"&& tmux attach -t '{tmux_session}' "
+        f"|| tmux new-session -s '{tmux_session}' -c '{full_path}' "
+        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'"
+    )
     # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
     # Terminal起動済みの場合: do scriptで新ウィンドウを作る
     if not terminal_was_running:
@@ -253,7 +262,7 @@ def open_terminal(folder_name):
 tell application "Terminal"
     activate
     delay 0.5
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions" in front window
+    do script "{tmux_cmd}" in front window
     tell tab 1 of front window
         set custom title to "{folder_name}"
         set title displays custom title to true
@@ -268,7 +277,7 @@ end tell'''
     else:
         script = f'''
 tell application "Terminal"
-    do script "unset CLAUDECODE; cd \\"{full_path}\\" && claude --dangerously-skip-permissions"
+    do script "{tmux_cmd}"
     tell tab 1 of front window
         set custom title to "{folder_name}"
         set title displays custom title to true
