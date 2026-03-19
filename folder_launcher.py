@@ -243,27 +243,23 @@ def _close_all_keyboards():
 # === tmuxゾンビ掃除 ===
 
 def _cleanup_zombie_tmux_sessions():
-    """claudeが動いていないtmuxセッションを一括kill（フォルダを開くたびに実行）"""
+    """デタッチ状態（どのターミナルにも繋がっていない）のtmuxセッションを一括kill"""
     try:
         # tmuxサーバーが動いていなければ何もしない
-        result = subprocess.run(['tmux', 'list-sessions', '-F', '#{session_name}'],
-                                capture_output=True, text=True, timeout=3)
+        # session_attached: アタッチ中のクライアント数（0ならデタッチ状態＝ゾンビ）
+        result = subprocess.run(
+            ['tmux', 'list-sessions', '-F', '#{session_name},#{session_attached}'],
+            capture_output=True, text=True, timeout=3)
         if result.returncode != 0:
             return
-        for session_name in result.stdout.strip().split('\n'):
-            if not session_name:
+        for line in result.stdout.strip().split('\n'):
+            if not line or ',' not in line:
                 continue
-            # セッション内のプロセスを確認
-            pane_result = subprocess.run(
-                ['tmux', 'list-panes', '-t', session_name, '-F', '#{pane_current_command}'],
-                capture_output=True, text=True, timeout=3)
-            if pane_result.returncode != 0:
-                continue
-            # claudeが動いていなければゾンビ → kill
-            if 'claude' not in pane_result.stdout:
+            session_name, attached = line.rsplit(',', 1)
+            if attached == '0':
                 subprocess.run(['tmux', 'kill-session', '-t', session_name],
                                capture_output=True, timeout=3)
-                NSLog(f"ゾンビtmuxセッションをkill: {session_name}")
+                NSLog(f"デタッチ済みtmuxセッションをkill: {session_name}")
     except Exception as e:
         NSLog(f"tmuxゾンビ掃除でエラー（無視）: {e}")
 
@@ -274,23 +270,17 @@ def open_terminal(folder_name):
     """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
     terminal_was_running = _is_terminal_running()
-    # 全tmuxセッションからゾンビ（claudeが動いていないもの）を一括掃除
+    # デタッチ済み（×で閉じた等）のゾンビtmuxセッションを一括掃除
     _cleanup_zombie_tmux_sessions()
     # tmuxセッション名（ドットを除去、tmuxはドット入りセッション名を嫌う）
     tmux_session = folder_name.replace('.', '_')
+    # 掃除後に残っているセッション＝アタッチ中（別ウィンドウで作業中）なので再接続
+    # 存在しなければ新規作成
     tmux_cmd = (
-        f"if tmux has-session -t '{tmux_session}' 2>/dev/null; then "
-        f"  if tmux list-panes -t '{tmux_session}' -F '#{{pane_current_command}}' 2>/dev/null | grep -q claude; then "
-        f"    tmux attach -t '{tmux_session}'; "
-        f"  else "
-        f"    tmux kill-session -t '{tmux_session}' 2>/dev/null; "
-        f"    tmux new-session -s '{tmux_session}' -c '{full_path}' "
-        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'; "
-        f"  fi; "
-        f"else "
-        f"  tmux new-session -s '{tmux_session}' -c '{full_path}' "
-        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'; "
-        f"fi"
+        f"tmux has-session -t '{tmux_session}' 2>/dev/null "
+        f"&& tmux attach -t '{tmux_session}' "
+        f"|| tmux new-session -s '{tmux_session}' -c '{full_path}' "
+        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'"
     )
     # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
     # Terminal起動済みの場合: do scriptで新ウィンドウを作る
