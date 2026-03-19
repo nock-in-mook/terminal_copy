@@ -57,3 +57,14 @@ SokuWatchdogTimer = hs.timer.doEvery(5, function()
         SokuClickWatcher:start()
     end
 end)
+
+-- GDrive上のinit.luaが変わったら自動コピー＆リロード
+local GDRIVE_LUA = os.getenv("HOME") .. "/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026/terminal_copy/hammerspoon_init.lua"
+local LOCAL_LUA = os.getenv("HOME") .. "/.hammerspoon/init.lua"
+
+SokuConfigWatcher = hs.pathwatcher.new(GDRIVE_LUA, function(paths, flagTables)
+    -- GDriveからローカルにコピーしてリロード
+    hs.execute("cp '" .. GDRIVE_LUA .. "' '" .. LOCAL_LUA .. "'")
+    hs.alert.show("即ランチャー: 設定更新 → リロード")
+    hs.timer.doAfter(0.5, function() hs.reload() end)
+end):start()
