@@ -248,12 +248,21 @@ def open_terminal(folder_name):
     terminal_was_running = _is_terminal_running()
     # tmuxセッション名（ドットを除去、tmuxはドット入りセッション名を嫌う）
     tmux_session = folder_name.replace('.', '_')
-    # tmuxセッションが生きていれば再接続、なければ新規作成（シングルクォートでエスケープ回避）
+    # 既存セッションがあるがclaudeが動いていない（ゾンビ）ならkillして新規作成
+    # ×ボタンで閉じた後などにゾンビセッションが残るケースへの対処
     tmux_cmd = (
-        f"tmux has-session -t '{tmux_session}' 2>/dev/null "
-        f"&& tmux attach -t '{tmux_session}' "
-        f"|| tmux new-session -s '{tmux_session}' -c '{full_path}' "
-        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'"
+        f"if tmux has-session -t '{tmux_session}' 2>/dev/null; then "
+        f"  if tmux list-panes -t '{tmux_session}' -F '#{{pane_current_command}}' 2>/dev/null | grep -q claude; then "
+        f"    tmux attach -t '{tmux_session}'; "
+        f"  else "
+        f"    tmux kill-session -t '{tmux_session}' 2>/dev/null; "
+        f"    tmux new-session -s '{tmux_session}' -c '{full_path}' "
+        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'; "
+        f"  fi; "
+        f"else "
+        f"  tmux new-session -s '{tmux_session}' -c '{full_path}' "
+        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'; "
+        f"fi"
     )
     # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
     # Terminal起動済みの場合: do scriptで新ウィンドウを作る
