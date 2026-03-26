@@ -9,12 +9,31 @@ local lastClickY = 0
 local DOUBLE_CLICK_THRESHOLD = 0.4  -- 秒
 local MOVE_THRESHOLD = 5            -- ピクセル
 
+-- 透明キーボードの位置ファイル（NSPanelはhs.windowで見えないため別途チェック）
+local KB_BOUNDS_FILE = "/tmp/transparent_keyboard_bounds.json"
+
 -- デスクトップクリックかどうか判定（クリック座標にウィンドウがなければデスクトップ）
 local function isDesktopClick(x, y)
+    -- 通常ウィンドウのチェック
     for _, win in ipairs(hs.window.orderedWindows()) do
         local f = win:frame()
         if x >= f.x and x <= f.x + f.w and y >= f.y and y <= f.y + f.h then
             return false  -- ウィンドウの上をクリックしている
+        end
+    end
+    -- 透明キーボード（NSPanel）のチェック
+    local f = io.open(KB_BOUNDS_FILE, "r")
+    if f then
+        local content = f:read("*a")
+        f:close()
+        local ok, data = pcall(hs.json.decode, content)
+        if ok and data then
+            for _, bounds in pairs(data) do
+                if x >= bounds.x and x <= bounds.x + bounds.w
+                   and y >= bounds.y and y <= bounds.y + bounds.h then
+                    return false  -- 透明キーボードの上をクリックしている
+                end
+            end
         end
     end
     return true  -- どのウィンドウにも当たらない = デスクトップ
