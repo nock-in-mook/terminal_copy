@@ -3,16 +3,19 @@
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - Mac版: 安定動作中（Hammerspoon自動起動設定済み）
-- Windows版: マウスフック完全軽量化済み（セッション019）
+- Windows版: 安定稼働中
 
-## 今回の変更（セッション030）
-### Hammerspoon自動起動設定
-- **症状**: Mac再起動後に即ランチャーが起動しない
-- **原因**: Hammerspoonの「Launch at Login」がOFFだった → クリック検知が動かず即ランチャーが反応しない
-- **修正**: `defaults write org.hammerspoon.Hammerspoon MJAutoLaunchKey -bool true` で自動起動をONに設定
+## 今回の変更（セッション020）
+### Snipping Toolスクショ自動保存設定
+- **症状**: このPCだけWin+Shift+Sで範囲選択後にSnipping Toolの編集画面が消えず、自動保存もされない
+- **原因**: Snipping Toolの設定で「元のスクリーンショットを自動的に保存」がOFFだった
+- **解決**: Snipping Tool → 設定 → 「自動的に保存」をONにして解決
+- 編集ウィンドウは残るが、自動保存はされるようになった
+- コードの変更は不要だった（一時的にtake_and_paste_screenshot関数を追加したが元に戻した）
 
-### 透明キーボードのキー反応しない問題（解決）
-- Mac再起動で解消。macOS 26の一時的な不具合だった（前回セッション029での推測どおり）
+### 学んだこと
+- 透明キーボードからsubprocess.runでPowerShellを呼ぶときはCREATE_NO_WINDOWが必要（ループで呼ぶとターミナルが大量に開く）
+- Google DriveがEXEをロックする場合はos.replaceで差し替えると成功する
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携 + ゾンビ掃除）
@@ -26,5 +29,4 @@
 - ショートカットは .pyw を引数で渡す方式なので、コード修正だけで反映される
 
 ## 次のアクション
-- Windows側で一発更新バッチを実行して透明キーボードEXEを再ビルド（前回からの持ち越し）
 - 特に緊急のタスクなし、安定稼働中
