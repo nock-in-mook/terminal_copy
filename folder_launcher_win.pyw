@@ -293,7 +293,6 @@ def open_terminals(folder_names):
         logging.debug(f"open_terminals: name={name!r}, path={full_path!r}, exists={os.path.isdir(full_path)}")
         env = os.environ.copy()
         env.pop('CLAUDECODE', None)
-        env['CLAUDE_CODE_NO_FLICKER'] = '1'
         try:
             subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
                              creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
