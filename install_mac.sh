@@ -85,48 +85,47 @@ ENDSCRIPT
 chmod +x "$STARTER_SH"
 echo "OK"
 
-# --- Step 5: ログイン項目に登録 ---
-echo "[5/5] ログイン項目に登録..."
+# --- Step 5: LaunchAgentで自動起動を登録 ---
+echo "[5/5] LaunchAgentを登録..."
 
-# SokuLauncher.app を作成
-APP_DIR="$LOCAL_DIR/SokuLauncher.app/Contents/MacOS"
-mkdir -p "$APP_DIR"
-cat > "$LOCAL_DIR/SokuLauncher.app/Contents/Info.plist" << INFOPLIST
+LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.nock.folder-launcher.plist"
+
+# 既存のLaunchAgentをアンロード
+launchctl bootout "gui/$(id -u)/com.nock.folder-launcher" 2>/dev/null || true
+
+cat > "$LAUNCH_AGENT" << PLISTEOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleExecutable</key>
-    <string>launcher</string>
-    <key>CFBundleIdentifier</key>
-    <string>${BUNDLE_ID}</string>
-    <key>CFBundleName</key>
-    <string>SokuLauncher</string>
-    <key>LSUIElement</key>
+    <key>Label</key>
+    <string>com.nock.folder-launcher</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$STARTER_SH</string>
+    </array>
+    <key>RunAtLoad</key>
     <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/tmp/sokulauncher_launchagent.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/sokulauncher_launchagent.log</string>
 </dict>
 </plist>
-INFOPLIST
+PLISTEOF
 
-cat > "$APP_DIR/launcher" << 'LAUNCHEREOF'
-#!/bin/bash
-open -a Terminal "$HOME/Library/Application Support/SokuLauncher/start.sh"
-LAUNCHEREOF
-chmod +x "$APP_DIR/launcher"
-
-# ログイン項目を登録（SokuLauncher + Hammerspoon）
+# 旧ログイン項目を削除（残骸クリーンアップ）
 osascript -e "
 tell application \"System Events\"
     try
         delete login item \"SokuLauncher\"
     end try
-    try
-        delete login item \"Hammerspoon\"
-    end try
-    make login item at end with properties {name:\"SokuLauncher\", path:\"$LOCAL_DIR/SokuLauncher.app\", hidden:true}
-    make login item at end with properties {name:\"Hammerspoon\", path:\"/Applications/Hammerspoon.app\", hidden:true}
 end tell
 " 2>/dev/null || true
+
 echo "OK"
 
 # --- 起動 ---
