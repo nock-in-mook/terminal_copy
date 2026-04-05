@@ -54,10 +54,23 @@ from tkinter import messagebox
 import pystray
 from PIL import Image, ImageDraw
 
-# 多重起動防止（Windows Mutex）
-_mutex = ctypes.windll.kernel32.CreateMutexW(None, True, "SokuLauncher_Mutex")
+# 多重起動防止（Windows Mutex — プロセス不在ならMutexをクリアして起動）
+_MUTEX_NAME = "SokuLauncher_Mutex"
+_mutex = ctypes.windll.kernel32.CreateMutexW(None, True, _MUTEX_NAME)
 if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
-    sys.exit(0)
+    # Mutexがあるが、実際にプロセスが生きてるか確認
+    import subprocess as _sp
+    _result = _sp.run(
+        ['powershell', '-Command',
+         "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'folder_launcher_win' -and $_.ProcessId -ne $PID }).ProcessId"],
+        capture_output=True, text=True, timeout=5
+    )
+    if _result.stdout.strip():
+        # 本当に別プロセスが動いてる → 終了
+        sys.exit(0)
+    # プロセスなし → 古いMutexが残ってるだけ。クリアして再取得
+    ctypes.windll.kernel32.CloseHandle(_mutex)
+    _mutex = ctypes.windll.kernel32.CreateMutexW(None, True, _MUTEX_NAME)
 
 # タスクトレイ等でのアプリ名を「即ランチャー」にする（pythonw.exe表示を防ぐ）
 APP_ID = "SokuLauncher.即ランチャー"
