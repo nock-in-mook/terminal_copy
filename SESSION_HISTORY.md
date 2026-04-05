@@ -9674,3 +9674,11 @@ session
 - LaunchAgent (`com.nock.folder-launcher.plist`) が旧Dropboxパスを指していたため、Mac起動時に即ランチャーが自動起動しなかった
 - LaunchAgentを `/bin/bash` + `start.sh` に修正
 - `install_mac.sh` も「ログイン項目（System Events）」方式から LaunchAgent方式に変更
+
+---
+## 即ランチャー_032_スクショボタン調査＆英日キー変更 (2026-04-05)
+
+- 透明キーボードMac版の「🎞↑」(paste_latest_screenshot)ボタンが時々動かない問題を調査
+- スクショ保存先が `/var/folders/.../claude_screenshots/` であることを確認（`/tmp` ではない）
+- `paste_latest_screenshot()` 自体は正常動作を確認、スクショが撮れない問題は未再現
+- 「英/日」キーを「📁SS」（スクショフォルダを開く）に変更して動作確認しやすくした
