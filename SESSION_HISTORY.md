@@ -9667,3 +9667,10 @@ session
 前回のセッション（021）ではCLAUDE_CODE_NO_FLICKER検証、経理バッチ作成、Claude Codeアップデートをやったね。現在は安定稼働中。
 
 何かやりたいことある？
+
+---
+## 即ランチャー_031_Mac自動起動修正 (2026-04-05)
+
+- LaunchAgent (`com.nock.folder-launcher.plist`) が旧Dropboxパスを指していたため、Mac起動時に即ランチャーが自動起動しなかった
+- LaunchAgentを `/bin/bash` + `start.sh` に修正
+- `install_mac.sh` も「ログイン項目（System Events）」方式から LaunchAgent方式に変更
