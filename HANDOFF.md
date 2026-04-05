@@ -5,16 +5,12 @@
 - Mac版: 安定動作中
 - Windows版: 安定稼働中
 
-## 今回の変更（セッション032）
-### 透明キーボードMac版: 英/日キー → スクショフォルダ開くボタンに変更
-- `透明キーボード/mac/transparent_keyboard_mac.py` 340行目
-- 「英/日」(toggle_input_source) → 「📁SS」(open_screenshot_folder) に変更
-- スクショの動作確認のため（スクショが時々うまく撮れない問題の調査用）
-
-### スクショ関連の調査結果
-- スクショ保存先: `/var/folders/kd/_w62d2390nn777kgzdyq8ysm0000gp/T/claude_screenshots/`（`/tmp` ではない）
-- `paste_latest_screenshot()` 自体は正常動作を確認
-- スクショが撮れない問題は未解決（再現せず）
+## 今回の変更（セッション033）
+### 多重起動防止のMutex残留問題を修正
+- `folder_launcher_win.pyw` 57行目付近
+- 即ランチャーがクラッシュ等で異常終了した場合、Mutexが解放されずに残るバグがあった
+- 新しく起動しようとすると「既に起動中」と判断されて即終了してしまう問題
+- **修正内容**: Mutexが存在する場合、PowerShellで実際のプロセスが生きてるか確認。プロセスが存在しなければMutexをクリアして起動する
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携 + ゾンビ掃除）
