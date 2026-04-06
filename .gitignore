@@ -1,8 +1,10 @@
 remote_bat*.bat
 remote_start*.sh
-# ランチャー用バイナリ（各PCで生成）
+# ランチャー用バイナリは %LOCALAPPDATA%\即ランチャー\ に出力するため
+# Gドライブ上には存在しないが、古いPC/古いビルドの取り込み防止のため念のため残す
 即ランチャー.exe
 python3.dll
-python314.dll
-python314._pth
+python3*.dll
+python3*._pth
 launcher_debug.log
+launcher_debug*.log

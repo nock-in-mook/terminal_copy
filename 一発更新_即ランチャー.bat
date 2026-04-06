@@ -8,21 +8,45 @@ taskkill /f /im "透明キーボード.exe" >nul 2>&1
 timeout /t 1 /nobreak >nul
 echo Stopped existing processes.
 
-:: Python
+:: Python 3.14 を探す（無ければwingetで自動インストール）
+:FIND_PYTHON
 set "PYTHON="
 if exist "C:\Python314\python.exe" (
     set "PYTHON=C:\Python314\python.exe"
-) else (
-    where py >nul 2>&1
+    goto PYTHON_FOUND
+)
+if exist "%LOCALAPPDATA%\Programs\Python\Python314\python.exe" (
+    set "PYTHON=%LOCALAPPDATA%\Programs\Python\Python314\python.exe"
+    goto PYTHON_FOUND
+)
+where py >nul 2>&1
+if not errorlevel 1 (
+    py -3.14 -c "import sys" >nul 2>&1
     if not errorlevel 1 (
-        for /f "delims=" %%i in ('py -c "import sys; print(sys.executable)"') do set "PYTHON=%%i"
+        for /f "delims=" %%i in ('py -3.14 -c "import sys; print(sys.executable)"') do set "PYTHON=%%i"
+        goto PYTHON_FOUND
     )
 )
-if "%PYTHON%"=="" (
-    echo Python not found. Install Python first.
+
+:: 見つからなければ winget でインストール
+echo Python 3.14 not found. Installing via winget...
+where winget >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: winget not available. Install Python 3.14 manually from python.org
     pause
     exit /b 1
 )
+winget install Python.Python.3.14 --silent --accept-source-agreements --accept-package-agreements
+if errorlevel 1 (
+    echo ERROR: Python install failed.
+    pause
+    exit /b 1
+)
+:: PATH再読み込みのため少し待つ
+timeout /t 2 /nobreak >nul
+goto FIND_PYTHON
+
+:PYTHON_FOUND
 echo Python: %PYTHON%
 
 :: Check pystray

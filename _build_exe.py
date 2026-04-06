@@ -8,7 +8,11 @@ import subprocess
 import urllib.request
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-EXE_PATH = os.path.join(DIR, "即ランチャー.exe")
+# 出力先はローカル（%LOCALAPPDATA%\即ランチャー\）
+# Gドライブ上に置くと複数PCで上書きし合って壊れる & SmartScreenが毎回警告を出すため
+OUT_DIR = os.path.join(os.environ["LOCALAPPDATA"], "即ランチャー")
+os.makedirs(OUT_DIR, exist_ok=True)
+EXE_PATH = os.path.join(OUT_DIR, "即ランチャー.exe")
 ICO_PATH = os.path.join(DIR, "app.ico")
 RCEDIT_PATH = os.path.join(os.environ["TEMP"], "rcedit.exe")
 
@@ -31,16 +35,16 @@ TEMP_EXE = os.path.join(os.environ["TEMP"], "soku_launcher_build.exe")
 print("Copying pythonw.exe...")
 shutil.copy2(PYTHONW, TEMP_EXE)
 
-# DLLをコピー
+# DLLをコピー（ローカル出力先へ）
 for dll in DLLS:
     src = os.path.join(PYTHON_DIR, dll)
-    dst = os.path.join(DIR, dll)
+    dst = os.path.join(OUT_DIR, dll)
     if os.path.exists(src):
         shutil.copy2(src, dst)
 
-# _pthファイル生成
+# _pthファイル生成（ローカル出力先へ）
 pth_name = [d for d in DLLS if d != "python3.dll"][0].replace(".dll", "._pth")
-pth_path = os.path.join(DIR, pth_name)
+pth_path = os.path.join(OUT_DIR, pth_name)
 with open(pth_path, "w", encoding="utf-8") as f:
     f.write(f"{PYTHON_DIR}\\Lib\n")
     f.write(f"{PYTHON_DIR}\\DLLs\n")

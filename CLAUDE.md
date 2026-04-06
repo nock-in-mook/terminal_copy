@@ -52,6 +52,10 @@ bash install_mac.sh
 - **原因**: 自動更新の仕組み上、起動時にGDriveから最新版をコピーする
 - **対処**: GDriveのファイルを直接修正すること
 
+### 8. Windows: 複数PCで共有するとビルド成果物が壊れる + 毎回SmartScreen警告
+- **原因**: `即ランチャー.exe` / `python3xx.dll` / `_pth` をGドライブに置くと、別PCでビルドされた `_pth`（例: `C:\Python314\Lib`）が同期されて、このPCにその場所が無ければpythonw.exeが無言で落ちる。Gドライブ上の未署名EXEはSmartScreenが毎回警告も出す
+- **対処**: ビルド成果物の出力先を `%LOCALAPPDATA%\即ランチャー\` に変更済み（`_build_exe.py` / `_setup_shortcuts.py`）。ソースの `.pyw` はGドライブのまま → コード編集は即反映。Python 3.14が無ければ `一発更新_即ランチャー.bat` がwingetで自動インストールする
+
 ## ファイル構成
 
 | ファイル | 説明 |

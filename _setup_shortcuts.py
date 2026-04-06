@@ -5,7 +5,10 @@ import subprocess
 import tempfile
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-EXE_PATH = os.path.join(DIR, "即ランチャー.exe")
+# EXEはローカル（%LOCALAPPDATA%\即ランチャー\）に置く。
+# PYWはGドライブのまま → コード編集は従来通り即反映される
+OUT_DIR = os.path.join(os.environ["LOCALAPPDATA"], "即ランチャー")
+EXE_PATH = os.path.join(OUT_DIR, "即ランチャー.exe")
 PYW_PATH = os.path.join(DIR, "folder_launcher_win.pyw")
 ICO_PATH = os.path.join(DIR, "app.ico")
 
