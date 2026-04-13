@@ -280,7 +280,7 @@ def open_terminal(folder_name):
         f"tmux has-session -t '{tmux_session}' 2>/dev/null "
         f"&& tmux attach -t '{tmux_session}' "
         f"|| tmux new-session -s '{tmux_session}' -c '{full_path}' "
-        f"'unset CLAUDECODE; claude --dangerously-skip-permissions'"
+        f"'unset CLAUDECODE; claude --dangerously-skip-permissions --effort max'"
     )
     # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
     # Terminal起動済みの場合: do scriptで新ウィンドウを作る
