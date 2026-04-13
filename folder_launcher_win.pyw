@@ -307,7 +307,7 @@ def open_terminals(folder_names):
         env = os.environ.copy()
         env.pop('CLAUDECODE', None)
         try:
-            subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
+            subprocess.Popen(['wt', '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions --effort max'],
                              creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
                              env=env)
             logging.debug(f"open_terminals: wt起動成功 {name!r}")
@@ -317,7 +317,7 @@ def open_terminals(folder_names):
             wt_path = os.path.join(os.environ.get('LOCALAPPDATA', ''),
                                    'Microsoft', 'WindowsApps', 'wt.exe')
             if os.path.exists(wt_path):
-                subprocess.Popen([wt_path, '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions'],
+                subprocess.Popen([wt_path, '--title', name, '-d', full_path, 'cmd', '/k', 'claude --dangerously-skip-permissions --effort max'],
                                  creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
                                  env=env)
                 logging.debug(f"open_terminals: フルパスwt起動成功 {name!r}")
