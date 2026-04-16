@@ -129,6 +129,16 @@ end tell
 
 echo "OK"
 
+# --- Hammerspoonをログイン項目に登録 ---
+echo "Hammerspoonをログイン項目に登録..."
+osascript -e '
+tell application "System Events"
+    if not (exists login item "Hammerspoon") then
+        make login item at end with properties {path:"/Applications/Hammerspoon.app", hidden:true}
+    end if
+end tell' 2>/dev/null || true
+echo "OK"
+
 # --- 起動 ---
 echo ""
 echo "Hammerspoonを起動中..."
