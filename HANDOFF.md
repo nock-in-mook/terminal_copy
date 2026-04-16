@@ -2,27 +2,22 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- Mac版: 安定動作中（自動起動をログイン項目方式に変更済み）
+- Mac版: 安定動作中（自動起動はログイン項目方式）
 - Windows版: 安定稼働中
 
-## 今回の作業（セッション035）
-### Mac版の自動起動をログイン項目方式に変更
+## 今回の作業（セッション036）
+### ターミナル.appのスクロール挙動を修正
 
-**問題**:
-1. LaunchAgentのstart.shが `nohup python3 &` + `exit 0` → launchdが子プロセスを刈り取り → 起動失敗
-2. LaunchAgentから直接 `exec python3` に修正 → 起動はするがGUI権限不足でAppleScript（Terminal操作）が動かない
-3. Hammerspoonがログイン項目に未登録 → クリック検知が起動しない
+**問題**: Mac版でClaude Code利用中、マウスホイールを回すと入力履歴が循環してチャット本文をスクロールできなかった
 
-**対応**:
-1. LaunchAgent（plist）方式を廃止、plist削除済み
-2. SokuLauncher.app（ログイン項目）の中身を `exec python3` に書き換え（GDriveからの最新コピー付き）
-3. Hammerspoonもログイン項目に登録済み
-4. install_mac.shも同じログイン項目方式に更新
+**原因**: ターミナル.app「Clear Dark」プロファイルの「代替スクリーンをスクロール」設定がONになっていて、altscreenモードでスクロールが矢印キー扱いになっていた
 
-**ポイント**: ログイン項目はGUIセッションとして起動されるため、AppleScriptやsubprocessでのGUI操作が正常に動く
+**対応**: 設定 → プロファイル → Clear Dark → **キーボード**タブの「代替スクリーンをスクロール」チェックを外した（詳細タブではなくキーボードタブにあった。macOS 26 Tahoeでの位置）
+
+**結果**: マウスホイールでチャット本文がスクロール可能に。プロファイル設定なので永続。
 
 ## 次のアクション
-- 再起動して自動起動が正常に動くか確認する
+- 特になし（前回セッションの「再起動して自動起動確認」はまだ残ってる可能性あり）
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携 + ゾンビ掃除）
