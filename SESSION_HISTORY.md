@@ -10558,3 +10558,11 @@ mac版はどう？
 - LaunchAgent自動起動修正: start.sh経由をやめてexecでpython3を直接起動（子プロセス刈り取り対策）
 - Hammerspoonをログイン項目に自動登録（自動起動漏れ対策）
 - install_mac.shにも両方の修正を反映
+
+---
+## 即ランチャー_035 (2026-04-16)
+- LaunchAgentの子プロセス刈り取り問題を発見・修正（exec方式に変更）
+- LaunchAgent経由だとGUI権限不足でAppleScriptが動かない問題を発見
+- 自動起動方式をLaunchAgentからログイン項目（SokuLauncher.app）に変更
+- Hammerspoonもログイン項目に登録（自動起動漏れ対策）
+- install_mac.shもログイン項目方式に全面更新

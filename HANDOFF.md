@@ -2,30 +2,33 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- Mac版: 安定動作中（自動起動問題を修正済み）
+- Mac版: 安定動作中（自動起動をログイン項目方式に変更済み）
 - Windows版: 安定稼働中
 
-## 今回の作業（セッション034）
-### LaunchAgent自動起動の修正
+## 今回の作業（セッション035）
+### Mac版の自動起動をログイン項目方式に変更
 
 **問題**:
-- Mac再起動後に即ランチャーが自動起動しなかった（2つの原因）
+1. LaunchAgentのstart.shが `nohup python3 &` + `exit 0` → launchdが子プロセスを刈り取り → 起動失敗
+2. LaunchAgentから直接 `exec python3` に修正 → 起動はするがGUI権限不足でAppleScript（Terminal操作）が動かない
+3. Hammerspoonがログイン項目に未登録 → クリック検知が起動しない
 
-**原因1: start.shのバックグラウンド起動が刈り取られる**
-- plistが `start.sh` を呼ぶ → start.shが `nohup python3 &` + `exit 0` → launchdが子プロセスを刈り取り
-- **修正**: plistから `bash -c "cp ...; exec python3 ..."` で直接起動。`exec`でbashがpython3に置き換わるため、launchdが監視するプロセス＝python3本体になる
+**対応**:
+1. LaunchAgent（plist）方式を廃止、plist削除済み
+2. SokuLauncher.app（ログイン項目）の中身を `exec python3` に書き換え（GDriveからの最新コピー付き）
+3. Hammerspoonもログイン項目に登録済み
+4. install_mac.shも同じログイン項目方式に更新
 
-**原因2: Hammerspoonがログイン項目に登録されていなかった**
-- クリック検知はHammerspoonが担当しているが、ログイン項目に入っていなかった
-- **修正**: osascriptでログイン項目に追加。install_mac.shにも同処理を追加
+**ポイント**: ログイン項目はGUIセッションとして起動されるため、AppleScriptやsubprocessでのGUI操作が正常に動く
 
 ## 次のアクション
-- 特になし。次回再起動で自動起動が正常に動くか確認する
+- 再起動して自動起動が正常に動くか確認する
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携 + ゾンビ掃除）
 - `hammerspoon_init.lua` — Hammerspoon設定（グローバル変数でGC対策済み、GDrive監視で自動リロード、透明キーボード除外）
-- `install_mac.sh` — Mac版インストールスクリプト（tmux自動インストール含む、LaunchAgent方式、Hammerspoonログイン項目登録）
+- `install_mac.sh` — Mac版インストールスクリプト（tmux自動インストール含む、ログイン項目方式）
+- `SokuLauncher.app` — ログイン項目用.appラッパー（`~/Library/Application Support/SokuLauncher/` に配置）
 
 ## Windows版の構成
 - `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
