@@ -103,7 +103,8 @@ cat > "$LAUNCH_AGENT" << PLISTEOF
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>$STARTER_SH</string>
+        <string>-c</string>
+        <string>cp "$SCRIPT_DIR/folder_launcher.py" "$LOCAL_PY" 2>/dev/null; cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG" 2>/dev/null; exec "$PYTHON" "$LOCAL_PY"</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
