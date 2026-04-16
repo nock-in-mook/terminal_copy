@@ -10552,3 +10552,9 @@ mac版はどう？
 - Mac版の即ランチャーが自動起動していなかった問題を修復
 - LaunchAgentのplistが存在しなかったため再作成し、launchctl bootstrapで登録
 - 手動で即ランチャーを起動して動作確認OK
+
+---
+## 即ランチャー_034 (2026-04-16)
+- LaunchAgent自動起動修正: start.sh経由をやめてexecでpython3を直接起動（子プロセス刈り取り対策）
+- Hammerspoonをログイン項目に自動登録（自動起動漏れ対策）
+- install_mac.shにも両方の修正を反映
