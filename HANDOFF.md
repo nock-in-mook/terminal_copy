@@ -2,27 +2,25 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- Mac版: 安定動作中
+- Mac版: 安定動作中（自動起動修復済み）
 - Windows版: 安定稼働中
 
-## 今回の作業（セッション035）
-### claude起動時に --effort max を自動付加
+## 今回の作業（セッション033）
+### Mac版の自動起動修復
 
-**背景**:
-- Opus 4.6のバグ検出精度が劣化しているとの報告（2026-04-12時点）
-- `/effort max` で工数レベルを最高に設定することが推奨されている
+**問題**:
+- Mac再起動後に即ランチャーが自動起動していなかった
+- LaunchAgentのplistファイル（`com.nock.folder-launcher.plist`）が `~/Library/LaunchAgents/` に存在していなかった
+- install_mac.shはplistを書き出すが `launchctl bootstrap` を実行していなかったため、ファイルが消えると復旧できなかった
 
 **対応**:
-1. `folder_launcher_win.pyw` — Windows版の `claude` 起動コマンド2箇所に `--effort max` を追加
-2. `folder_launcher.py` — Mac版の `claude` 起動コマンド1箇所に `--effort max` を追加
-3. コミット＆プッシュ済み
-
-**結果**:
-- 即ランチャー経由で開くすべてのターミナルで `claude --dangerously-skip-permissions --effort max` が実行される
-- 既存ターミナルには影響なし、新規起動分から適用
+1. 手動でfolder_launcher.pyを起動（GDriveから最新版コピー後）
+2. LaunchAgentのplistを再作成
+3. `launchctl bootstrap` で登録 → 次回ログイン時から自動起動する
 
 ## 次のアクション
 - 特になし。通常運用。
+- install_mac.shに `launchctl bootstrap` を追加する改修は未実施（必要なら今後対応）
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + tmux連携 + ゾンビ掃除）
