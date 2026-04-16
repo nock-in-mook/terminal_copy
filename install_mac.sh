@@ -55,82 +55,68 @@ mkdir -p "$HOME/.hammerspoon"
 cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG"
 echo "OK"
 
-# --- Step 4: Pythonスクリプトをローカルにコピー ---
-echo "[4/5] スクリプトをローカルにコピー..."
+# --- Step 4: Pythonスクリプトとランチャー.appをセットアップ ---
+echo "[4/5] スクリプトとランチャーをセットアップ..."
 pkill -f "folder_launcher.py" 2>/dev/null || true
 sleep 0.5
 mkdir -p "$LOCAL_DIR"
 cp "$SCRIPT_DIR/folder_launcher.py" "$LOCAL_PY"
 
-# 起動スクリプト作成（GDriveから最新版をコピーしてから起動）
-cat > "$STARTER_SH" << ENDSCRIPT
-#!/bin/bash
-GDRIVE_PY="$SCRIPT_DIR/folder_launcher.py"
-LOCAL_PY="$LOCAL_PY"
+# SokuLauncher.app を作成（ログイン項目用の.appラッパー）
+APP_DIR="$LOCAL_DIR/SokuLauncher.app/Contents/MacOS"
+mkdir -p "$APP_DIR"
 
-# Googleドライブ版が存在すれば最新版をコピー
-if [ -f "\$GDRIVE_PY" ]; then
-    cp "\$GDRIVE_PY" "\$LOCAL_PY" 2>/dev/null || true
-fi
-# Hammerspoon設定も最新版をコピー
-if [ -f "$SCRIPT_DIR/hammerspoon_init.lua" ]; then
-    cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG" 2>/dev/null || true
-fi
-
-nohup "$PYTHON" "\$LOCAL_PY" > /tmp/sokulauncher_stdout.log 2> /tmp/sokulauncher_stderr.log &
-disown
-osascript -e 'tell application "Terminal" to close front window' 2>/dev/null &
-exit 0
-ENDSCRIPT
-chmod +x "$STARTER_SH"
-echo "OK"
-
-# --- Step 5: LaunchAgentで自動起動を登録 ---
-echo "[5/5] LaunchAgentを登録..."
-
-LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.nock.folder-launcher.plist"
-
-# 既存のLaunchAgentをアンロード
-launchctl bootout "gui/$(id -u)/com.nock.folder-launcher" 2>/dev/null || true
-
-cat > "$LAUNCH_AGENT" << PLISTEOF
+cat > "$APP_DIR/../Info.plist" << 'INFOPLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key>
-    <string>com.nock.folder-launcher</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/bin/bash</string>
-        <string>-c</string>
-        <string>cp "$SCRIPT_DIR/folder_launcher.py" "$LOCAL_PY" 2>/dev/null; cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG" 2>/dev/null; exec "$PYTHON" "$LOCAL_PY"</string>
-    </array>
-    <key>RunAtLoad</key>
+    <key>CFBundleExecutable</key>
+    <string>launcher</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.sokulauncher.agent</string>
+    <key>CFBundleName</key>
+    <string>SokuLauncher</string>
+    <key>LSUIElement</key>
     <true/>
-    <key>KeepAlive</key>
-    <false/>
-    <key>StandardOutPath</key>
-    <string>/tmp/sokulauncher_launchagent.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/sokulauncher_launchagent.log</string>
 </dict>
 </plist>
-PLISTEOF
+INFOPLIST
 
-# 旧ログイン項目を削除（残骸クリーンアップ）
+cat > "$APP_DIR/launcher" << LAUNCHEREOF
+#!/bin/bash
+# GDriveから最新版をコピーしてからpython3を直接起動
+GDRIVE_PY="$SCRIPT_DIR/folder_launcher.py"
+GDRIVE_HS="$SCRIPT_DIR/hammerspoon_init.lua"
+LOCAL_PY="$LOCAL_PY"
+HS_CONFIG="$HS_CONFIG"
+
+cp "\$GDRIVE_PY" "\$LOCAL_PY" 2>/dev/null
+cp "\$GDRIVE_HS" "\$HS_CONFIG" 2>/dev/null
+
+exec "$PYTHON" "\$LOCAL_PY" > /tmp/sokulauncher_stdout.log 2>/tmp/sokulauncher_stderr.log
+LAUNCHEREOF
+chmod +x "$APP_DIR/launcher"
+echo "OK"
+
+# --- Step 5: ログイン項目に登録（LaunchAgentは使わない） ---
+echo "[5/5] ログイン項目を登録..."
+
+# 旧LaunchAgentがあれば削除
+launchctl bootout "gui/$(id -u)/com.nock.folder-launcher" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/com.nock.folder-launcher.plist" 2>/dev/null || true
+
+# SokuLauncherをログイン項目に登録
+SOKU_APP="$LOCAL_DIR/SokuLauncher.app"
 osascript -e "
 tell application \"System Events\"
     try
         delete login item \"SokuLauncher\"
     end try
-end tell
-" 2>/dev/null || true
+    make login item at end with properties {path:\"$SOKU_APP\", hidden:true}
+end tell" 2>/dev/null || true
 
-echo "OK"
-
-# --- Hammerspoonをログイン項目に登録 ---
-echo "Hammerspoonをログイン項目に登録..."
+# Hammerspoonもログイン項目に登録
 osascript -e '
 tell application "System Events"
     if not (exists login item "Hammerspoon") then
@@ -148,7 +134,7 @@ open -a Hammerspoon
 
 echo "即ランチャーを起動中..."
 sleep 1
-open -a Terminal "$STARTER_SH"
+open "$SOKU_APP"
 
 echo ""
 echo "=== インストール完了 ==="
