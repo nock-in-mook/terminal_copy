@@ -10573,3 +10573,13 @@ mac版はどう？
 - 原因: ターミナル.app「Clear Dark」プロファイルの「代替スクリーンをスクロール」がON
 - 対応: 設定 → プロファイル → Clear Dark → キーボードタブで該当チェックを外す（macOS 26 Tahoeでは詳細タブではなくキーボードタブに移動していた）
 - プロファイル設定として永続化済み
+
+---
+## 即ランチャー_037_iTerm2移行 (2026-04-17)
+- 前セッションの「代替スクリーンをスクロール」OFFは錯覚で、Terminal.app は alt screen の scrollback を一切保存できない仕様と判明
+- Mac版を Terminal.app から **iTerm2** に完全移行（iTerm2 には `Save lines to scrollback in alternate screen mode` 設定があり、Claude Code の会話履歴をマウスホイールで遡れるようになる）
+- folder_launcher.py の AppleScript を全て iTerm2 対応に書き換え（`tell application "iTerm"`, `current session of window`, `set name`, `pgrep -x iTerm2`）
+- iTerm2 Profile 設定: Title → `Session Name`、`Applications in terminal may change the title` OFF（session name 固定化）
+- 旧 launcher が `open -a Terminal start.sh` で現在のターミナルを閉じる危険があったので、install_mac.sh 正規版（python3 直接起動方式）に戻した
+- SF Mono Terminal フォントを `~/Library/Fonts/` に自動コピーする処理を install_mac.sh に追加（iTerm2 の Font パネルで選択できるように）
+- CLAUDE.md に別Macセットアップ手順・ハマりポイント9〜12を追記（iTerm2 移行・title自動更新・launcher事故・SF Monoフォント）
