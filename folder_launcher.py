@@ -191,9 +191,12 @@ def _find_kb_pids():
 
 
 def _launch_one_keyboard(x=None, y=None, width=None, height=None, slot=0, title=''):
-    """透明キーボードを1つ起動（位置・サイズ・スロット・タイトル指定）"""
+    """透明キーボードを1つ起動（位置・サイズ・スロット・タイトル指定）。
+    Apple Silicon で arch -arm64 を明示しないと、親プロセス（launcher自体）が
+    Rosetta 経由の x86_64 だった場合に子も Rosetta 継承し、screencapture -i が
+    "could not create image from rect" で失敗する症状を避ける。"""
     if os.path.exists(KB_SCRIPT):
-        cmd = ['python3', KB_SCRIPT]
+        cmd = ['arch', '-arm64', 'python3', KB_SCRIPT]
         if x is not None and y is not None:
             cmd += ['--x', str(x), '--y', str(y)]
         if width is not None:

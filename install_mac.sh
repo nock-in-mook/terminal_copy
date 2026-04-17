@@ -122,7 +122,8 @@ HS_CONFIG="$HS_CONFIG"
 cp "\$GDRIVE_PY" "\$LOCAL_PY" 2>/dev/null
 cp "\$GDRIVE_HS" "\$HS_CONFIG" 2>/dev/null
 
-exec "$PYTHON" "\$LOCAL_PY" > /tmp/sokulauncher_stdout.log 2>/tmp/sokulauncher_stderr.log
+# Apple Silicon で Rosetta(x86_64) 継承を避ける。親がRosettaだと子のscreencapture -iが失敗する。
+exec /usr/bin/arch -arm64 "$PYTHON" "\$LOCAL_PY" > /tmp/sokulauncher_stdout.log 2>/tmp/sokulauncher_stderr.log
 LAUNCHEREOF
 chmod +x "$APP_DIR/launcher"
 echo "OK"
