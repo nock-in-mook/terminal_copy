@@ -62,6 +62,21 @@ if [ ! -d "/Applications/iTerm.app" ]; then
 fi
 echo "OK"
 
+# --- Step 2.6: SF Mono Terminal フォントを ~/Library/Fonts へコピー ---
+# Terminal.app 同梱の SFMono-Terminal.ttf はプライベートフォントで、
+# そのままだと iTerm2 の Font パネルに表示されない。ユーザーフォントとして登録する。
+echo "[2.6/5] SF Mono Terminal フォントを確認..."
+TERM_FONT_DIR="/System/Applications/Utilities/Terminal.app/Contents/Resources/Fonts"
+USER_FONT_DIR="$HOME/Library/Fonts"
+mkdir -p "$USER_FONT_DIR"
+for f in SFMono-Terminal.ttf SFMonoItalic-Terminal.ttf; do
+    if [ -f "$TERM_FONT_DIR/$f" ] && [ ! -f "$USER_FONT_DIR/$f" ]; then
+        cp "$TERM_FONT_DIR/$f" "$USER_FONT_DIR/"
+        echo "  コピー: $f"
+    fi
+done
+echo "OK"
+
 # --- Step 3: Hammerspoon設定をコピー ---
 echo "[3/5] Hammerspoon設定をセットアップ..."
 mkdir -p "$HOME/.hammerspoon"
