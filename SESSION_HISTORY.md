@@ -10583,3 +10583,12 @@ mac版はどう？
 - 旧 launcher が `open -a Terminal start.sh` で現在のターミナルを閉じる危険があったので、install_mac.sh 正規版（python3 直接起動方式）に戻した
 - SF Mono Terminal フォントを `~/Library/Fonts/` に自動コピーする処理を install_mac.sh に追加（iTerm2 の Font パネルで選択できるように）
 - CLAUDE.md に別Macセットアップ手順・ハマりポイント9〜12を追記（iTerm2 移行・title自動更新・launcher事故・SF Monoフォント）
+
+---
+## 即ランチャー_038_iTerm2導入_透明キーボード修正 (2026-04-17)
+- このMacにも iTerm2 を導入（前セッション037は別Macで実施済み、こちらは未移行だった）
+- `bash install_mac.sh` で iTerm2・SF Mono Terminalフォント・Hammerspoon を自動セットアップ、Profile 設定はユーザー手動
+- 透明キーボードのキー送信が長年「再起動でしか戻らない」状態だった症状を根本修正：CGEventPost が macOS の TCC キャッシュ／code signature 不整合で無言失敗していた
+- スクショボタンが動いてテキストボタンが動かないことから「同プロセスからの送信だけ失敗」と切り分け、`mac/transparent_keyboard_mac.py:83-103` の `type_text` / `send_key` を osascript（System Events）経由に置き換え
+- スクショと同じ別プロセス起動方式になり、Python 自身のアクセシビリティ権限が不要になって安定動作
+- 透明キーボード（別リポジトリ）にコミット `b82746e` で push済み

@@ -3,405 +3,341 @@
 ---
 
 🧑 あなた
-ターミナルについて相談！
+やあ
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-前回（#036）はターミナル.appの「代替スクリーンをスクロール」をオフにして、チャット本文がマウスホイールでスクロールできるようにしたとこで終わってたね。
+おはよう。状況だけ報告：
 
-今日は何の相談？
-- スクロールの件でまた何か起きた？
-- 即ランチャー側の話（メニュー表示・tmux連携・自動起動まわり）？
-- それ以外？
+別Mac（KYO-YaguchinoMacBook-Air）で SF Mono Terminal フォント追加の作業を済ませてプッシュ済み。こちらの手元にも同じ変更が未コミットで残ってて、`git pull` がブロックされた。
 
-ざっくり教えてもらえたら深掘りするよ。
+差分を比べたら内容は完全一致、唯一の違いは `install_mac.sh` の実行権限ビット（ローカルだけ755、リモートは644）。
+
+→ **ローカル変更を破棄して `git pull` する**でいい？（リモートに同じ内容が入ってるので失われる作業はなし。実行権限だけリモート側で落ちてるけど、`bash install_mac.sh` で起動するので実害なし）
+
+進めていい？
 
 🧑 あなた
-なんかさ、前は違った気がするのだけど、チャット履歴が全然辿れなくなっちゃったんだよ。１画面ぶんくらい上にスクロールしたら、もうカットされてて何も見えない。/var/folders/lv/w8ghy5b1449gpsxd30mx8zph0000gn/T/claude_screenshots/ss_20260417_153250.png　こんな感じ。これ、ちょっと下にスクロールしたらもう最新チャットなの。全然履歴が見えない。なんか余計な設定なり操作なりしてしまったかな？
+いいよ！
+
+↓
+(作業)
+↓
+
+🧑 あなた
+あれ、iterminal2を入れてなんちゃら、て搔いてなかった？それも済んでるの？？
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-スクショ見た。一番上が `Last login` と `tmux has-session` で、その下がすぐClaude Codeの画面になってる。これ、原因がはっきりした。
+あ、ごめん、ちゃんと確認してなかった。
 
-**原因:** Claude Code の画面は「代替スクリーン（alt screen）」という別バッファで描画されてる。alt screenの中身は**ターミナル.appのスクロールバックに保存されない**仕様。
+**このMacにはiTerm2まだ入ってない。** 別Macでの作業がリポジトリに記録されてるだけだった：
+- `/Applications/iTerm.app` → なし
+- `~/Library/Fonts/SFMono-Terminal.ttf` → なし
 
-前回（#036）「代替スクリーンをスクロール」をOFFにした結果、マウスホイールを回すと alt screen を抜けて「裏のプライマリ画面」が見える動きになった。今見えてる『上にスクロールしたら1画面くらい』は、**Claude Codeの会話履歴じゃなく、シェル起動直後のログ**（`Last login`, `tmux has-session ...`）。だから1画面分しか遡れない。
+今このターミナルも Terminal.app の中で動いてる。
 
-前回「治った」と感じたのは錯覚で、実はチャット履歴そのものは最初から遡れてなかった、が正解。
+このMacも揃えるなら `bash install_mac.sh` を実行すれば、iTerm2 とフォントが自動インストールされる（Homebrew経由でiTerm2、Terminal.appからフォントコピー）。あとはCLAUDE.mdのStep 3にあるiTerm2 Profile設定だけ手動。
+
+実行する？
+
+🧑 あなた
+いえす！
+
+↓
+(作業)
+↓
+
+🤖 Claude
+完了！iTerm2 と SF Mono フォント、両方入った。Hammerspoonと即ランチャーも起動済み。
+
+**残り：iTerm2のProfile設定（マウス操作が必要）**
+
+iTerm2 → `Cmd+,` → Profiles → Default を選択して、最低限これだけは：
+
+1. **Terminal タブ → ☑ Save lines to scrollback in alternate screen mode** ← これが**肝**（Claude Codeの履歴がマウスホイールで遡れるようになる）
+2. **General タブ → Title セクション → `Title: Session Name`** + **☐ Applications in terminal may change the title**（タブ名が"tmux"とかに勝手に変わるのを防ぐ）
+3. （好みで）Text タブ → Change Font → **SF Mono Terminal Regular 12pt**
+
+設定したらデスクトップをダブルクリック → 即ランチャーメニューから新しいiTerm2ウィンドウを開いて動作確認。
+
+🧑 あなた
+iterm起動できる?
+
+↓
+(作業)
+↓
+
+🧑 あなた
+おおおー、できたよ!ぶじに！
+
+🤖 Claude
+よかった！🎉
+
+最終確認：デスクトップをダブルクリックして即ランチャーメニュー出して、フォルダ選んで → iTerm2で新ウィンドウが開いて、Claude Code起動してマウスホイールで会話遡れたら、完全勝利。
+
+🧑 あなた
+できてる！
+
+↓
+(作業)
+↓
+
+🧑 あなた
+ところでさ、透明キーボードのキーが送信されないバグがちょこちょこあるんだ。ちょこちょこというか、一度そうなるともうずっとダメなんだけど。どうしてだろう？
+
+↓
+(作業)
+↓
+
+🧑 あなた
+今もそう。
+
+↓
+(作業)
+↓
+
+🧑 あなた
+ボタン押したらハイライトされたりとか反応はある。けど見かけだけ。
+
+↓
+(作業)
+↓
+
+🤖 Claude
+**原因確定**：アクセシビリティ権限。
+
+決定的証拠：
+- 透明キーボードのプロセスは生きてる（PID 5650, 99959 — 2つも走ってる）
+- クリックは取れてる（君がハイライト見えてる時点で `mouseDown_` は動いてる）
+- でも **TCC.db のアクセシビリティ許可リストに Python が入ってない**
+
+→ `CGEventPost(kCGHIDEventTap, ...)` が**無言で失敗**してる。エージェント報告通り、コードに戻り値チェックがないから「送ったつもり」になってる。
+
+「一度ハマると戻らない」のは、TCC（権限DB）はプロセス再起動だけじゃ復旧しないから。Python.app をシステム設定で再許可する必要がある。
+
+解決手順を組む前に、もう少し情報取らせて：
+
+↓
+(作業)
+↓
+
+🤖 Claude
+**完全に犯人特定**：
+
+走ってる Python は **Xcode 内蔵** のやつだった：
+```
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python
+```
+
+そして TCC.db を 2回検索しても、Python は**1件も登録されてない**（システム/ユーザー両方）。
+
+つまり「ちょこちょこ」じゃなくて**最初から失敗してる**可能性が高い。クリックがハイライトされるのは自プロセス内の処理なので権限不要、でもキー送信（CGEventPost）は権限必須だから silent fail。
 
 ---
 
-**選択肢:**
+**今すぐ復旧する方法**：
 
-1. **tmuxのcopy-modeで遡る**（既にtmux経由で起動してるので即使える）
-   - `Ctrl+b` → `[` で copy-mode 入る
-   - マウスホイール／PgUp で遡る
-   - `q` で抜ける
-   - ただしClaude Codeのalt screenは tmux 的にも alt screen 扱いで、tmux scrollbackには流れない可能性大 → 試してみないとわからない
+1. システム設定 → アクセシビリティを開く（こっちでURL叩いて開く）
+2. `+` ボタン → `Cmd+Shift+G` でパス貼り付け → 追加 → ON
+3. 古い透明キーボードプロセス（PID 99959）を kill → 再起動
 
-2. **iTerm2に乗り換える**
-   - マウスホイールをそのままアプリに渡す設定がある（alt screen でもスクロール可能）
-   - 即ランチャーの起動先をiTerm2に切り替える改造が必要
+パスはこれ（コピーしやすいように）：
+```
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app
+```
 
-3. **Claude Code側の履歴機能で辿る**
-   - `/resume` で過去セッション呼び出し（ただしスクロール閲覧じゃない）
-   - 今回みたいに「セッション中の会話を遡る」用途には不向き
-
----
-
-正直、**2のiTerm2乗り換え**が一番スッキリ解決する。即ランチャー側は `open -a Terminal` を `open -a iTerm` に変えるだけ。
-
-まずは軽く試せる1から行く？ それともiTerm2導入まで踏み込む？
+設定画面、開く？（あと、根本対策として install_mac.sh で想定されてる CommandLineTools の Python を使うように切り替えるのもアリ。先に応急処置やる？）
 
 🧑 あなた
-リモート操作がメインだから、キーボードなしがいいんだよね。２がいいかな？　tmuxはどうなるの？
-
-🤖 Claude
-tmuxはそのまま使えるよ。tmuxはターミナルエミュレータに依存しないので、iTerm2でも同じように動く。
-
-ただ即ランチャー側で**Terminal.app依存の部分**があるから、そこを書き換える必要がある。どこか確認する。
+うん、まず応急処置したい
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-**tmuxへの影響: ない。** tmuxはターミナルエミュレータに依存しないから、iTerm2でもそのまま動く。折り畳まれてるtmux関連のコードは触らなくていい。
+3つ用意した：
+1. **システム設定**のアクセシビリティ画面を開いた
+2. **ファインダー**で Python.app の場所を開いた
+3. **クリップボード**にパスを入れた
 
-**書き換えが必要なのは Terminal.app 依存部分。** `folder_launcher.py` に `tell application "Terminal"` のAppleScriptが10箇所以上ある（ウィンドウ起動・再配置・タイトル設定・閉じる処理・pgrep判定）。これを全部 iTerm2 用に書き換える必要がある。規模としては**中くらい**（半日作業）。
+どっちか好きな方で：
 
----
+**A. ドラッグ派**：ファインダーの `Python.app`（青い大きなPython蛇アイコン）を、システム設定のアクセシビリティリストへドラッグ＆ドロップ
 
-**肝心なポイント:** iTerm2には Terminal.app にない設定があって、これがまさに今回の救世主：
+**B. ボタン派**：システム設定の `+` ボタン → ファイル選択ダイアログで `Cmd+Shift+G` → `Cmd+V`（パスが貼られる）→ Enter → 「開く」
 
-- iTerm2 → Settings → Profiles → Terminal → **"Save lines to scrollback when an app status bar is present"** / **"Save lines to scrollback in alternate screen mode"**
-- これをONにすると、**alt screen（Claude Code画面）の内容もスクロールバックに保存される**
-- マウスホイールだけで会話履歴を自然に遡れるようになる
-
-Terminal.appではこの設定がないから、どうやっても alt screen の内容は失われる。iTerm2への乗り換えは理にかなってる。
-
----
-
-**段取り案:**
-1. iTerm2インストール（`brew install --cask iterm2`）
-2. iTerm2設定（スクロール関連のチェックON/OFF）
-3. `folder_launcher.py` のTerminal.app依存部分をiTerm2対応に書き換え
-4. install_mac.sh の権限追加箇所も iTerm2 に差し替え
-5. 動作確認（リモート接続想定、マウスホイールだけで履歴遡れるか）
-
-この順で進めていい？ まずは1・2だけ先に試して「スクロール問題が本当に解決するか」を確認してから、3以降の書き換えに入る方が安全だと思う。どう？
+追加できたらトグルを **ON**。「追加した」って言ってくれたら、プロセス再起動を自動でやる。
 
 🧑 あなた
-うん、そうしてみよう
+オンにできたよ！
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-iTerm2起動した。次は設定。**リモート＋マウス操作前提**で手順を書く。
+両方とも消えた。準備完了。
 
-**手順:**
+**普段の手順で透明キーボードを再表示して**、テキストエディタとかブラウザのアドレスバーで適当にキー押してみて。文字が入力されたら成功！
 
-1. **iTerm2を最前面にする**（Dockクリックか、今開いたウィンドウをクリック）
-
-2. **画面上のメニューバーから** `iTerm2` → `Settings...` をクリック（Cmd+カンマでも開く）
-
-3. **左上のタブから `Profiles` をクリック**
-
-4. **右側のタブから `Terminal` をクリック**（General/Colors/Text/Window/Terminal/Session/Keys/Advanced の中の「Terminal」）
-
-5. 以下にチェックを入れる:
-   - ☑ **Save lines to scrollback in alternate screen mode** （これが今回の肝）
-   - ☑ **Save lines to scrollback when an app status bar is present**（念のため）
-
-6. 同じ`Terminal`タブの中の **Scrollback Lines** を大きくする:
-   - `Unlimited scrollback` にチェック、または数値を`100000`くらいに
-
-7. **Settings画面を閉じる**（赤い○をクリック）
-
----
-
-設定画面開けたらスクショ送って。`Profiles → Terminal` タブのチェック状態を見て確認する。迷ったら途中でスクショくれれば場所を指示するよ。
+（応急処置の経緯はあとでメモリに残すので、根本対策に進む前に動作確認お願い）
 
 🧑 あなた
-あ、設定して閉じちゃった！多分大丈夫よ
+いや、治ってないみたい
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-じゃあ軽くiTerm2で動作確認しよう。今のこのClaude Code（Terminal.app側）は触らずに、iTerm2で別ウィンドウで試す。
+ピンポン！原因見えた。
 
-**テスト手順:**
+- TCC更新: 18:54:24
+- 透明キーボード起動: 19:01:07 ← TCC後だが…
+- **親プロセス**: PID 48498 = **即ランチャー本体**（folder_launcher.py、同じXcode内Python）
 
-1. **iTerm2ウィンドウをクリックして最前面に**（Dockアイコンクリックでも）
+子プロセスは親のTCC権限を継承する。**親（即ランチャー）が TCC更新前から動いてれば、古い「権限なし」状態をキャッシュ**してて、子もそれを継承する。
 
-2. iTerm2の空のプロンプトに以下をコピペしてEnter:
-   ```
-   less /usr/share/dict/words
-   ```
-
-3. `less`の画面が出たら、**マウスホイールを上下に回してみる**
-   - 中身がスクロールする → alt screen 内スクロールOK
-   - 何も動かない、または別画面にジャンプ → NG
-
-4. `q` キーでlessを抜ける（マウスだけだと`q`が押せないから、キーボード使えるなら`q`、無理なら iTerm2 のメニューから `Shell` → `Close` でウィンドウ閉じる）
-
-5. 新しいiTerm2ウィンドウを開いて、もう一度同じ`less`をやって、今度は`q`で抜けた後、**マウスホイールを上に回して**less内の文字列（"aardvark"とか先頭の単語）が**scrollback に残ってるか**確認
-
----
-
-どうなった？ 2段階の動作（alt screen 中にスクロールできる／抜けた後に内容が残ってる）を教えて。スクショでもOK。
-
-🧑 あなた
-普通にスクロールしたよ！
+親の起動時刻チェック：
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-プロセス名 `iTerm2`、AppleScriptは `tell application "iTerm"` で操作。まずiTerm2のAppleScript文法が想定通りか軽く検証してから書き換える。
+ビンゴ！即ランチャーは **TCC更新の52分前から動いてる**。古い「権限なし」状態をキャッシュしてる。
+
+→ **即ランチャー本体を再起動**すれば、新しい権限を読み込んで、その子（透明キーボード）も含めて全部直るはず。
+
+再起動方法を確認：
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-AppleScript動作確認すべてOK。次は実動テスト。
+即ランチャー再起動した（PID 20707, 20838）。これは TCC更新の**後**に起動してるので、新しい権限で動いてる。
 
-**次の段取り:**
-1. `python3 folder_launcher.py --open terminal_copy` で iTerm2 起動テスト（新しいClaude Codeセッションが1個立ち上がる、すぐ閉じる想定）
-2. OK なら、現在動いてる常駐プロセス（旧Terminal.app版）を止めて、新しいiTerm2版を常駐起動
-3. デスクトップダブルクリックでメニュー出て、フォルダ選んで iTerm2 で Claude Code 起動するフルフロー確認
-
-今、このClaude Code セッションは旧Terminal.app内で動いてるけど、テスト起動は **別ウィンドウ（iTerm2）** で立ち上がるので、ここの会話は壊れない。
-
-テスト進めていい？
+**もう一度、透明キーボードを表示する普段の手順をやって、テキストエディタで入力テストお願い！**
 
 🧑 あなた
-`unn,
+ダメだなぁ。ダメというか、正確に言えば、スクショを取るボタンは反応する。他がダメだ。テキストを送り込む系のボタンが軒並みダメ。再起動すれば一度は治るのはわかってるんだけど…
+
+🤖 Claude
+「スクショ系は動く、テキスト系がダメ」← これめちゃくちゃ重要な手がかり！
+
+スクショは `screencapture` 等の別経路、テキストは `CGEventPost`。同じプロセス内で **CGEventPost だけが選択的に失敗**してる。これはアクセシビリティ権限とは別の問題かも。
+
+コード見て切り分けたい：
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-iTerm2に新しいウィンドウが開いた（2つ目）。ただ、タイトルが「tmux」になってる（`set name`後にiTerm2が勝手に書き換えてる）。これは常駐モードの3秒ごとrefreshで「terminal_copy」に戻るので、単発テストでは仕方ない。
+確定。スクショは `subprocess.Popen(['screencapture', ...])` で**別プロセス起動**だから動く。テキストは CGEventPost で**自プロセスから直接送信**だから権限がいる。スクショ動く=Python以外は動く、テキスト動かない=Python権限が効いてない、と完全一致。
 
-画面を見て確認してほしい:
-1. **iTerm2に新しいウィンドウ出てる？** その中でClaude Codeが起動してる？
-2. **位置・サイズは合ってる？**（画面左上〜画面高さの75%あたりを想定）
-3. そのClaude Code画面で**マウスホイール回して履歴が遡れる？**
-
-スクショ送ってもらうのが確実。
-
-🧑 あなた
-新ウィンドウでなく、既存ウィンドウが置き換わったよw　でも、タイトル欄以外は全部完璧。スクロールもする。
-
-🧑 あなた
-新ウィンドウでなく、既存ウィンドウが置き換わったよw　でも、タイトル欄以外は全部完璧。スクロールもする。あ、あとフォントがダメだ。見づらすぎるw
-
-🤖 Claude
-スクロールOK、位置もOK → 本題クリア！「既存ウィンドウ置き換わった」のは見た目だけで、実際は裏に新ウィンドウ作られてる（count=2だった）。機能的にはOKだから放置で大丈夫。
-
-フォントとタイトルを整える。
-
-**フォント変更:**
-1. iTerm2 → `Settings` (Cmd+,)
-2. `Profiles` タブ → 左で現在のプロファイル選択
-3. 右の `Text` タブ
-4. `Font` セクションの **`Change Font`** ボタン
-5. 読みやすいフォントとサイズへ（おすすめ: **Menlo Regular 14pt** or **SF Mono 13pt**）
-
-**タイトル暴走を止める設定も今のうちに:**
-6. 同じSettings内で `Profiles` → `Terminal` タブ
-7. スクロール下へ → **`Terminal may set shell integration title`** のチェックを**外す**（似た名前: `Terminal may set title` / `Allow session-initiated title change`）
-8. さらに `General` タブ → `Title` セクションで **`Session name`** だけチェック（他は外す）
-
----
-
-設定できたら「OK」と返して。次に**常駐プロセスを再起動**して、デスクトップダブルクリックからのフルフロー確認に進む。タイトルもそこで3秒ごとrefreshされて `terminal_copy` に戻るはず。
-
-🧑 あなた
-/var/folders/lv/w8ghy5b1449gpsxd30mx8zph0000gn/T/claude_screenshots/ss_20260417_160234.png　ちょっと文面違うけど、オフになってるような？
+TCC許可は入ったのに効かないのが謎。深掘りするね：
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-あ、そのスクショの `Terminal` タブはいじらなくてOK。`Terminal may report window title` はそのままでいい（これはアプリがタイトルを「読む」側の設定）。
+確定。TCC.dbには `com.apple.python3` = 許可で入ってる、即ランチャーも透明キーボードもTCC更新後に起動してる、bundle IDも一致。**それでも動かない**。
 
-タイトル書き換え対策は**General タブの Title セクション**が正解。でも一旦それは後回しで、先にフォント変える。
+これは macOS 側の TCC/code signature キャッシュの闇（複数の `com.apple.python3` が存在する、Xcode更新で署名キャッシュずれる、等）。**何度TCC弄っても再発する**。再起動で治るのは OS再起動でキャッシュclearされるから、というユーザーの体感とも一致。
 
-**左上の `Text` タブをクリック**して、その中で:
-- `Font` の右にある **`Change Font`** ボタン
-- 好きなフォント＋サイズ選択（**Menlo Regular 14pt** あたりで試してみて）
+**根本対策案**：透明キーボードのテキスト送信を `CGEventPost` から **`osascript -e 'tell ... keystroke "..."'`** にフォールバックさせる。osascriptは別プロセス起動なので、スクショと同じ理屈で安定して動く。
 
-変えたらスクショ送って。そこからタイトル設定（General タブ）に移る。
+具体的には：
+- `type_text()` を osascript 版に置き換え（or AXIsProcessTrustedで判定して切替）
+- `send_key()` も osascript の `key code N` に置き換え
+- System Events のアクセシビリティ許可（既に入ってる前提）を使う
 
-🧑 あなた
-よし、フォントOK
+これに切り替えれば「再起動で治る → またダメになる」のループから抜けられる。
 
-🤖 Claude
-次は**タイトル固定**。同じSettings内で:
-
-1. **`General` タブ**をクリック（Text の隣あたり、左上）
-2. 下の方にある **`Title`** セクション
-3. 「Components」みたいなチェックボックス群があるので、**`Session name` だけチェック**（`Job name`, `Working directory`, `TTY` など他のチェックは**全部外す**）
-
-チェックボックスの並びが分からなかったらスクショ送って。
-
-これ済んだら常駐プロセスの再起動に進むよ。
+実装する？ それとも先に **`tccutil reset` + macOS再起動** で「とりあえず今動かす」を優先する？
 
 🧑 あなた
-/var/folders/lv/w8ghy5b1449gpsxd30mx8zph0000gn/T/claude_screenshots/ss_20260417_161554.png　どれだろ？
+いや、待てるよ。直して！
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-見えた。2箇所いじる:
+コード差し替え＆古いプロセス kill 完了。
 
-1. **`Title: [Job ▼]`** のドロップダウンをクリック → **`Session Name`** を選択
-2. すぐ下の **`Applications in terminal may change the title`** のチェックを**外す**
+**普段の手順で透明キーボードを再表示 → テキスト送信ボタンを押してみて。**
 
-この2つやってくれれば、AppleScriptで `set name` した値（フォルダ名）がそのままタイトルに残る。
+注意：初回だけ「**"システムイベント.app" を制御する許可をPython（or osascript）に与えますか**」みたいなダイアログが出る可能性あり。出たら **OK** を押して。それで永続化される。
 
 🧑 あなた
-お、出た出た
+普段の手順というのは、即ランチャーから新規ターミナルを立ち上げ、それにセットで自動で起動する、て感じだけど。それでいいのね？
+
+🤖 Claude
+それでOK！即ランチャーが透明キーボードを `subprocess.Popen` で毎回起動する仕組みだから、次に立ち上がる透明キーボードは**新コード**で動く（透明キーボードのコードを毎回ファイルから読み直すので、即ランチャー本体の再起動は不要）。
+
+それでテキストボタン押してみて。
+
+🧑 あなた
+治った！送れたぜ！
+
+🤖 Claude
+🎉 やったね！長年のモヤモヤがやっと取れた。
+
+知見もったいないので、透明キーボードフォルダ側に修正内容と原因をメモしてコミットしておくね。
 
 ↓
 (作業)
 ↓
 
 🤖 Claude
-なるほど、launcher スクリプトが想定と違う（`open -a Terminal` + `start.sh` 経由になってる）。これが原因で start.sh 内の `close front window` がTerminal.appに向かって、今のセッションを壊す危険もある。
+コミット＆push完了。
 
-launcher を install_mac.sh 正規版の「python3 直接起動」方式に戻す。start.sh 経由廃止、Terminal.app 一切不使用に。
+**残した内容**：
+- `mac/transparent_keyboard_mac.py` — 修正本体
+- `DEVLOG.md` — 原因／調査経緯／対策の詳細
+- `HANDOFF.md` — 次のセッション用サマリ
 
-↓
-(作業)
-↓
-
-🤖 Claude
-常駐プロセス起動完了（PID 64075、LOCAL_PYも今日の日時に更新済み、「即ランチャー起動」ログも出てる）。
-
-**ユーザー側で確認してほしいこと:**
-
-1. **デスクトップの空白部分をダブルクリック** → メニューが出る？
-2. `OPEN` サブメニューから適当なフォルダを選択 → iTerm2 で新ウィンドウが開く？
-3. ウィンドウの**位置・サイズ・フォント**は期待通り？
-4. **タイトルにフォルダ名が表示**される？（3秒ごとrefreshされるので数秒待つ）
-5. **マウスホイールでClaude Code履歴が遡れる**？
-
-1〜5全部OKなら iTerm2 完全移行完了。スクショ or 結果を教えて。
+これで別Macでも自動配布されるし、もし同じ症状が他のpyobjcアプリで出たら DEVLOG が参考になる。お疲れ様！
 
 🧑 あなた
-全部いけた！
-
-↓
-(作業)
-↓
-
-🤖 Claude
-Mac版 iTerm2 移行、コミット＆プッシュ完了（commit `d18e104`）。
-
-**今回の成果:**
-- Terminal.app → iTerm2 完全移行
-- Claude Codeの会話履歴をマウスホイールでスムーズに遡れるように
-- タイトル・フォント・ウィンドウ配置すべて正常動作
-- 旧 start.sh 経由 launcher を正規版（python3直接起動）に戻した
-
----
-
-**残作業候補（任意）:**
-- `install_mac.sh` に iTerm2 自動インストール＆Profile設定案内を追加（別Mac再セットアップ用）
-- プロジェクト `CLAUDE.md` の「ハマりポイント」に今回の件を追記（知見の残し）
-
-追加でやっとく？ それとも別の相談ある？
-
-🧑 あなた
-ぜひ！もう一台のmacで君に伝えたらすぐに同じことができるようにしてくれると助かる。○○を読んで、あとは頼む、みたいな。もちろん設定は僕もやるけど。
+いやーありがとうね。では終わろう！
 
 ↓
 (作業)
 ↓
 
 🧑 あなた
-ところでもともとのターミナルのフォントわかる？
+セッションを終了する前に、以下を全て自動実行してください。**確認不要・全自動。**
 
-↓
-(作業)
-↓
+## Step 1: セッション名を決定（確認不要）
+1. セッションの内容を短く要約し、`{プロジェクト短縮名}_{連番}_{内容}` の形式で名前を自動生成する
+   - 例: `漢字書き順_007_テーパー実装`, `宿題_012_UI改善`
+   - 連番はプロジェクトMEMORYの `session_counter` を参照・更新する（なければ1から開始）
+2. **ユーザーに確認せず、そのまま使う**
 
-🤖 Claude
-取れた。Terminal.appの**Clear Dark**で使ってたフォントは:
+## Step 2: 全て並列実行
+以下を**全て並列で**実行する：
+- `HANDOFF.md` に現在の状況・次のアクションを書き込む（既に最新なら省略可）
+- `py "G:/マイドライブ/_claude-sync/transcript_export.py" --latest` でセッションログを `SESSION_LOG.md` に出力
+- `SESSION_HISTORY.md` の末尾にセッション名と日時のヘッダ付きで追記（重複チェック不要、常に追記）
+  - ヘッダ例: `---\n## 漢字書き順_009 (2026-03-02)\n`
+- `CLAUDECODE= claude session rename "<名前>"` でセッション名をリネーム
+- `session_counter` をインクリメント
 
-**`.AppleSystemUIFont` 12pt**（表示名はおそらく `SF Mono Regular 12pt`、Terminal.app内部だと `SFMonoTerminal-Regular` 扱い）
-
-iTerm2で同じ見た目にしたい場合は、`Text`タブ → `Change Font` → **SF Mono Regular 12pt** を選べば近くなる。今のフォントが気に入ってるならそのままでOK。
-
----
-
-ちなみにさっきのドキュメント整備（commit `5ce6531`）もプッシュ済み。別Macで「**プロジェクトの `CLAUDE.md` を読んで、あとは頼む**」と言えば、AIが以下を自動でやってくれる:
-
-1. `bash install_mac.sh` 実行（tmux/Hammerspoon/**iTerm2** 自動インストール）
-2. アクセシビリティ許可の案内
-3. iTerm2 Profile設定（alt screen scrollback・Title・Font）の手順を1つずつ案内
-4. 動作確認
-
-次はどうする？ 何か他に触る？ それともセッション閉じる？
-
-🧑 あなた
-フォントが出てこないな、SFで始まるのがない
-
-↓
-(作業)
-↓
-
-🤖 Claude
-ここにある: `/System/Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SFMono-Terminal.ttf`
-
-これを `~/Library/Fonts/` にコピーすれば iTerm2 のフォント選択に出てくる。やっちゃう。
-
-↓
-(作業)
-↓
-
-🤖 Claude
-インストール完了（`SFMono-Terminal.ttf` + `SFMonoItalic-Terminal.ttf` を `~/Library/Fonts/` へ配置）。
-
-iTerm2 の `Change Font` ダイアログを**一度閉じて開き直して**、検索ボックスに「**SF Mono**」と入れてみて。**SF Mono Terminal** が出てくるはず → それを **Regular 12pt** で選べばTerminal.app時代と同じ見た目。
-
-ただしこれは Terminal.app に同梱の Regular ウェイトだけ。他のウェイト（Light/Medium/Bold等）も欲しければ Xcode を入れる or Apple Developer サイトからSF Mono Familyをダウンロードする必要がある。普段Regularだけあれば十分だと思う。
-
-🧑 あなた
-完璧。フォントの件も申し送りお願い
-
-↓
-(作業)
-↓
-
-🤖 Claude
-申し送り完了（commit `d9e0135`）。
-
-別Macでは `bash install_mac.sh` 一発で SF Mono Terminal フォントも `~/Library/Fonts/` にコピーされる。ユーザーはiTerm2のProfile設定でフォント選ぶだけで Terminal.app時代と同じ見た目に。
-
-何か他にやる？
-
-🧑 あなた
-いいね！ありがとう！では終わりに。
+## Step 3: 終了案内
+- 「`/exit` で終了してください」と伝える（`/exit` は組み込みコマンドなのでスキルからは実行できない）
 
 ↓
 (作業)
