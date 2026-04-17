@@ -49,6 +49,19 @@ if [ ! -d "/Applications/Hammerspoon.app" ]; then
 fi
 echo "OK"
 
+# --- Step 2.5: iTerm2 インストール（Terminal.appではalt screenのscrollback保存ができないため） ---
+echo "[2.5/5] iTerm2を確認..."
+if [ ! -d "/Applications/iTerm.app" ]; then
+    echo "iTerm2をインストール中..."
+    if command -v brew &>/dev/null; then
+        brew install --cask iterm2
+    else
+        echo "ERROR: Homebrewが見つかりません。https://brew.sh からインストールしてください"
+        exit 1
+    fi
+fi
+echo "OK"
+
 # --- Step 3: Hammerspoon設定をコピー ---
 echo "[3/5] Hammerspoon設定をセットアップ..."
 mkdir -p "$HOME/.hammerspoon"
@@ -139,12 +152,21 @@ open "$SOKU_APP"
 echo ""
 echo "=== インストール完了 ==="
 echo ""
-echo "【重要】次の2つをシステム設定で許可してください："
+echo "【重要1】アクセシビリティ許可："
 echo "  システム設定 → プライバシーとセキュリティ → アクセシビリティ"
 echo "  → Hammerspoon.app を追加してON"
 echo "  → /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework"
 echo "    /Versions/3.9/Resources/Python.app を追加してON"
 echo ""
-echo "許可ダイアログが自動で出る場合はそのまま「許可」を押してください。"
+echo "【重要2】iTerm2のProfile設定（Claude Code会話履歴をマウスホイールで遡れるようにする）："
+echo "  iTerm2 → Settings (Cmd+,) → Profiles → Default を選択"
+echo "  - Terminal タブ:"
+echo "      ☑ Save lines to scrollback in alternate screen mode （肝）"
+echo "      ☑ Save lines to scrollback when an app status bar is present"
+echo "      Scrollback Lines: Unlimited scrollback ON"
+echo "  - General タブ → Title セクション:"
+echo "      Title: Session Name を選択"
+echo "      ☐ Applications in terminal may change the title （チェックを外す）"
+echo "  - Text タブ: Change Font で好みのフォント（Menlo Regular 14pt 等）"
 echo ""
 echo "設定後、デスクトップをダブルクリックしてメニューが出ればOKです。"
