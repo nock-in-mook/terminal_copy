@@ -10592,3 +10592,8 @@ mac版はどう？
 - スクショボタンが動いてテキストボタンが動かないことから「同プロセスからの送信だけ失敗」と切り分け、`mac/transparent_keyboard_mac.py:83-103` の `type_text` / `send_key` を osascript（System Events）経由に置き換え
 - スクショと同じ別プロセス起動方式になり、Python 自身のアクセシビリティ権限が不要になって安定動作
 - 透明キーボード（別リポジトリ）にコミット `b82746e` で push済み
+
+---
+## 即ランチャー_039_スクショRosetta原因特定 (2026-04-18)
+
+透明キーボードのPrScrで範囲選択してもファイルが保存されない症状を根本修正。真因は **Rosetta 継承**（即ランチャーが x86_64 Rosetta で起動 → 子の透明キーボード → 孫の screencapture まで継承 → CoreGraphicsのrect captureが内部失敗）。`folder_launcher.py` の `_launch_one_keyboard` と `SokuLauncher.app/Contents/MacOS/launcher` の exec 行に `arch -arm64` を明示して解決。2台のMacで動作確認済み。CLAUDE.mdハマりポイント#13＋プロジェクトMEMORYに知見保存。診断キーワード: `lsof -p <PID> | grep rosetta`。
