@@ -2,9 +2,10 @@
 # folder_launcher.py
 # Mac版フォルダランチャー：デスクトップダブルクリックでポップアップメニュー
 # - デスクトップの空白部分をダブルクリック → メニュー表示
-# - [OPEN] サブメニューからフォルダ選択 → ターミナル起動
+# - [OPEN] サブメニューからフォルダ選択 → iTerm2起動
 # - 最大4ウィンドウ、左寄せ配置（Dock幅分マージン）
 # - 透明キーボード同期（ターミナル数 = キーボード数）
+# - iTerm2を使う理由: alt screenのscrollback保存設定があり、Claude Codeの会話履歴をマウスホイールで遡れる
 
 import os
 import sys
@@ -105,17 +106,19 @@ def _get_screen_info():
 
 
 def _is_terminal_running():
-    """Terminal.appが起動しているかをpgrepで確認（AppleScriptを使わない）"""
-    result = subprocess.run(['pgrep', '-x', 'Terminal'], capture_output=True, text=True)
+    """iTerm2が起動しているかをpgrepで確認（AppleScriptを使わない）
+    プロセス名は /Applications/iTerm.app/Contents/MacOS/iTerm2 なので 'iTerm2' でマッチ
+    """
+    result = subprocess.run(['pgrep', '-x', 'iTerm2'], capture_output=True, text=True)
     return result.returncode == 0
 
 
 def _get_terminal_window_count():
-    """Terminal.appのウィンドウ数を取得（Terminal未起動なら0を返す）"""
+    """iTerm2のウィンドウ数を取得（未起動なら0を返す）"""
     if not _is_terminal_running():
         return 0
     script = '''
-tell application "Terminal"
+tell application "iTerm"
     return count of windows
 end tell'''
     result = _run_applescript(script)
@@ -126,7 +129,7 @@ end tell'''
 
 
 def _reposition_windows():
-    """全Terminal.appウィンドウを左寄せで再配置し、キーボードをその真下に配置"""
+    """全iTerm2ウィンドウを左寄せで再配置し、キーボードをその真下に配置"""
     sw, sh, dock_margin, menubar_h = _get_screen_info()
     win_count = _get_terminal_window_count()
     if win_count == 0:
@@ -147,12 +150,12 @@ def _reposition_windows():
     for i in range(win_count):
         x = dock_margin + i * win_w
         win_idx = win_count - i
-        # ターミナル配置＆tty取得
+        # ターミナル配置＆tty取得（iTerm2ではsession単位でttyを持つ）
         script = f'''
-tell application "Terminal"
+tell application "iTerm"
     if (count of windows) >= {win_idx} then
         set bounds of window {win_idx} to {{{x}, {margin_top}, {x + win_w}, {margin_top + win_h}}}
-        return tty of tab 1 of window {win_idx}
+        return tty of current session of window {win_idx}
     end if
 end tell'''
         tty = _run_applescript(script)
@@ -267,7 +270,7 @@ def _cleanup_zombie_tmux_sessions():
 # === メイン関数 ===
 
 def open_terminal(folder_name):
-    """Terminal.appウィンドウを1つ起動し、再配置（キーボード同期含む）"""
+    """iTerm2ウィンドウを1つ起動し、再配置（キーボード同期含む）"""
     full_path = resolve_folder_path(folder_name)
     terminal_was_running = _is_terminal_running()
     # デタッチ済み（×で閉じた等）のゾンビtmuxセッションを一括掃除
@@ -282,40 +285,20 @@ def open_terminal(folder_name):
         f"|| tmux new-session -s '{tmux_session}' -c '{full_path}' "
         f"'unset CLAUDECODE; claude --dangerously-skip-permissions --effort max'"
     )
-    # Terminal未起動の場合: activateでデフォルトウィンドウを作り、そこにdo scriptする
-    # Terminal起動済みの場合: do scriptで新ウィンドウを作る
-    if not terminal_was_running:
-        script = f'''
-tell application "Terminal"
+    # iTerm2: create window with default profile で新ウィンドウを作り、current session にコマンド送信
+    # 未起動時は activate → delay を挟んで起動を待つ
+    pre_delay = "delay 0.5" if not terminal_was_running else ""
+    script = f'''
+tell application "iTerm"
     activate
-    delay 0.5
-    do script "{tmux_cmd}" in front window
-    tell tab 1 of front window
-        set custom title to "{folder_name}"
-        set title displays custom title to true
-        set title displays device name to false
-        set title displays shell path to false
-        set title displays window size to false
-        set title displays file name to false
+    {pre_delay}
+    set newWin to (create window with default profile)
+    tell current session of newWin
+        write text "{tmux_cmd}"
+        set name to "{folder_name}"
     end tell
-    set ttyPath to tty of tab 1 of front window
-    return ttyPath
-end tell'''
-    else:
-        script = f'''
-tell application "Terminal"
-    do script "{tmux_cmd}"
-    tell tab 1 of front window
-        set custom title to "{folder_name}"
-        set title displays custom title to true
-        set title displays device name to false
-        set title displays shell path to false
-        set title displays window size to false
-        set title displays file name to false
-    end tell
-    set ttyPath to tty of tab 1 of front window
-    activate
-    return ttyPath
+    delay 0.3
+    return tty of current session of newWin
 end tell'''
     tty = _run_applescript(script)
     if tty:
@@ -325,17 +308,21 @@ end tell'''
 
 
 def _refresh_titles():
-    """全ターミナルのタイトルをフォルダ名で上書き（Claude Codeの上書きを防ぐ）"""
+    """全ターミナルのタイトルをフォルダ名で上書き（Claude Codeの上書きを防ぐ）
+    iTerm2ではセッション単位でttyとnameを持つので、全session を走査して該当ttyのnameを更新
+    """
     if not _tty_titles or not _is_terminal_running():
         return
     for tty, title in list(_tty_titles.items()):
         script = f'''
-tell application "Terminal"
+tell application "iTerm"
     repeat with w in windows
         repeat with t in tabs of w
-            if tty of t is "{tty}" then
-                set custom title of t to "{title}"
-            end if
+            repeat with s in sessions of t
+                if tty of s is "{tty}" then
+                    set name of s to "{title}"
+                end if
+            end repeat
         end repeat
     end repeat
 end tell'''
@@ -343,17 +330,17 @@ end tell'''
 
 
 def bring_terminals_to_front():
-    """全Terminal.appウィンドウを再配置＋最前面（キーボード同期含む）"""
+    """全iTerm2ウィンドウを再配置＋最前面（キーボード同期含む）"""
     if not _is_terminal_running():
         return
     _reposition_windows()
-    _run_applescript('tell application "Terminal" to activate')
+    _run_applescript('tell application "iTerm" to activate')
 
 
 def close_all_terminals():
-    """全Terminal.appウィンドウ＋全キーボードを閉じる"""
+    """全iTerm2ウィンドウ＋全キーボードを閉じる"""
     if _is_terminal_running():
-        _run_applescript('tell application "Terminal" to close every window')
+        _run_applescript('tell application "iTerm" to close every window')
     _close_all_keyboards()
 
 
