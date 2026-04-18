@@ -10597,3 +10597,8 @@ mac版はどう？
 ## 即ランチャー_039_スクショRosetta原因特定 (2026-04-18)
 
 透明キーボードのPrScrで範囲選択してもファイルが保存されない症状を根本修正。真因は **Rosetta 継承**（即ランチャーが x86_64 Rosetta で起動 → 子の透明キーボード → 孫の screencapture まで継承 → CoreGraphicsのrect captureが内部失敗）。`folder_launcher.py` の `_launch_one_keyboard` と `SokuLauncher.app/Contents/MacOS/launcher` の exec 行に `arch -arm64` を明示して解決。2台のMacで動作確認済み。CLAUDE.mdハマりポイント#13＋プロジェクトMEMORYに知見保存。診断キーワード: `lsof -p <PID> | grep rosetta`。
+
+---
+## 即ランチャー_040_ランチャー無反応NSLog修正 (2026-04-18)
+
+即ランチャーのフォルダ選択で iTerm2 が「約50%の確率で開かない」長年バグを根本解決。真犯人は `_cleanup_zombie_tmux_sessions()` 内の `NSLog(...)` が未import で NameError → `except` 内でも再度 NSLog を呼んで二重例外 → `open_terminal` 全体が吹き飛ぶ構造だった。iTerm2 を ×で閉じた直後（＝デタッチ tmux セッション残存）だけ発動するため再現率がばらついていた。対処: `NSLog` を `_log()` に置換、`_run_applescript` に10秒タイムアウト＋失敗ログ追加、`openFolder_` / `open_terminal` の各ステップを `/tmp/sokulauncher_launch.log` に記録。ログ仕込み→再現→真犯人判明→修正→動作確認まで1セッションで完結。CLAUDE.mdハマりポイント#14に記録。診断の勘どころ: 即ランチャー系の症状が出たらまず `/tmp/sokulauncher_launch.log` を見る。コミット: `5e1addf`。

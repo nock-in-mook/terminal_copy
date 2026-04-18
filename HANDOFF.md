@@ -4,46 +4,49 @@
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - Mac版: 2台とも **iTerm2 + ARM64 launcher** で安定動作中
 - Windows版: 安定稼働中
+- **今セッションで「即ランチャーからiTerm2を開いても50%くらい無反応」の長年バグを根本解決**
 
-## 今回の作業（セッション039）
+## 今回の作業（セッション040）
 
-### 透明キーボードのスクショ保存失敗バグを根本修正（別リポジトリ: transparent-keyboard）
-「PrScrで範囲選択してもファイルが保存されないことがある」症状を追跡して、**Rosetta継承**が真犯人だと確定した。
+### 即ランチャーのフォルダ選択が約50%無反応だった問題を根本修正
 
-- 症状: 透明キーボードのPrScrで範囲選択 → クロスヘア＆四角選択は普通に見えるのに、ファイルが保存されない
-- 最初の切り分け:
-  - `screencapture -x`（非対話）は成功、`-i`（対話）だけ失敗
-  - Python自体に画面収録権限を与えても直らない
-  - iTermから手動で `screencapture -i` 実行は成功
-- 真因: 即ランチャー（親）が Hammerspoon/launchd チェーンで **x86_64 Rosetta** として起動されてた。子の透明キーボード→孫の screencapture までアーキテクチャ継承され、Rosetta経由のPythonからCoreGraphicsのrect captureを呼ぶと内部で失敗してた（エラー: `could not create image from rect`）
-- 対処:
-  - `folder_launcher.py` の `_launch_one_keyboard` を `['arch', '-arm64', 'python3', KB_SCRIPT]` に変更
-  - `SokuLauncher.app/Contents/MacOS/launcher` の exec 行を `exec /usr/bin/arch -arm64 "/usr/bin/python3" ...` に変更
-  - `install_mac.sh` のlauncherテンプレも同様に更新（次のMacセットアップで自動反映）
-  - 透明キーボード側: `take_screenshot()` に診断ログ追加＋ファイル名衝突防止（マイクロ秒）＋撮影成功時の自動パスペースト
-- 診断用知見: `lsof -p <PID> 2>/dev/null | grep -iE 'rosetta|oah'` で Rosetta 判定
-- 動作確認: 2台のMac（appurunoMacBook-Air, KYO-YaguchinoMacBook-Air）で3連続スクショ成功＆自動パスペースト成功
-- CLAUDE.md のハマりポイント #13 に全記録、プロジェクトMEMORYにも feedback として保存
+**症状**: 即ランチャーのメニューからフォルダを選んでも、無反応でiTerm2ウィンドウが開かない。再現率は五分五分、条件不明だった。
 
-### 別Mac への移行・動作確認
-- チャット途中で KYO-YaguchinoMacBook-Air に移行
-- `~/.claude/projects` が GDrive 同期フォルダへのシンボリックリンクなので、Claude Code セッションも自動同期されてる → `/resume` で即コンテキスト復帰できた
-- このMacでも画面収録権限付与 → launcher+keyboard を ARM64 で再起動 → 動作確認OK
+**手順**: まず `folder_launcher.py` の `open_terminal` / `openFolder_` / `_run_applescript` に診断ログと AppleScript タイムアウト（10秒）を仕込み、`/tmp/sokulauncher_launch.log` に記録するようにした。ユーザーに再現してもらってログを取得 → 即座に真犯人判明。
 
-## 前回の作業（セッション038）
-### iTerm2 導入＋透明キーボードのキー送信バグ修正
-- `bash install_mac.sh` 実行でiTerm2、SF Monoフォント等を自動セットアップ
-- 透明キーボードのテキスト送信を CGEventPost → osascript（System Events）経由に変更（TCCキャッシュ問題の回避）
+**真犯人**: `_cleanup_zombie_tmux_sessions()` 内で `NSLog(...)` を呼んでいるが **`NSLog` は import されていない**。デタッチ済み tmux セッションがあるときだけ kill 通知で `NSLog` が走り、`NameError: name 'NSLog' is not defined` で例外。`except` 内でも再度 `NSLog` を呼んでいるため二重例外になり、`open_terminal` 全体が吹き飛んで iTerm2 ウィンドウが開かない。
+
+**条件分岐の正体**: iTerm2 を ×で閉じた直後（＝デタッチ tmux セッション残存）だけ失敗。フレッシュな状態や、tmux 掃除対象がない場合は成功 → 再現率が「約50%」にばらついてた。
+
+**対処**:
+- `NSLog` を `_log()`（`/tmp/sokulauncher_launch.log` 書き込みヘルパー）に置換
+- `_run_applescript` にタイムアウト10秒＋失敗ログを追加（iTerm2無反応時の無限待ち防止）
+- `openFolder_` / `open_terminal` の各ステップを `/tmp/sokulauncher_launch.log` に記録
+- CLAUDE.md ハマりポイント#14 として全記録
+
+**動作確認**: 3連続成功、デタッチtmuxの kill 通知も `_log` 経由で正しく記録された（`デタッチ済みtmuxセッションをkill: Chat`）。
+
+### コミット
+- `5e1addf` ランチャー無反応バグ修正: NSLog未import + 診断ログ整備
+
+## 前回の作業（セッション039）
+- 透明キーボードのPrScrが Rosetta 継承で失敗していた問題を `arch -arm64` 明示で解決
+- 2台の Apple Silicon Mac で動作確認済み
 
 ## 次のアクション
-- 特になし（terminal_copy / transparent-keyboard 両方とも安定稼働継続）
-- 他に Apple Silicon Mac を増やすときは install_mac.sh 一発＋権限2つ（アクセシビリティ＋画面収録）で完了
+- 特になし（terminal_copy は安定稼働継続）
+- もう一台の Mac への反映は **launcher 再起動だけ**でOK（GDrive 経由で `folder_launcher.py` が自動同期される仕組み）
+  ```
+  pkill -f folder_launcher.py
+  open -a "/Users/nock_re/Library/Application Support/SokuLauncher/SokuLauncher.app"
+  ```
+- 急がなければ次の Mac 再起動時に自動反映
 
 ## Mac版の構成
-- `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + **iTerm2** + tmux連携 + ゾンビ掃除 + **arch -arm64 キーボード起動**）
+- `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + **iTerm2** + tmux連携 + ゾンビ掃除 + **arch -arm64 キーボード起動** + **診断ログ `/tmp/sokulauncher_launch.log`**）
 - `hammerspoon_init.lua` — Hammerspoon設定（グローバル変数でGC対策済み、GDrive監視で自動リロード、透明キーボード除外）
 - `install_mac.sh` — Mac版インストールスクリプト（tmux・Hammerspoon・iTerm2・SF Mono Terminalフォント・**ARM64 launcher** 自動セットアップ、ログイン項目方式）
-- `SokuLauncher.app` — ログイン項目用.appラッパー（`~/Library/Application Support/SokuLauncher/` に配置、**arch -arm64** で exec）
+- `SokuLauncher.app` — ログイン項目用.appラッパー（`~/Library/Application Support/SokuLauncher/` に配置、**arch -arm64** で exec、起動時に GDrive から最新 folder_launcher.py を自動コピー）
 
 ## 新規Macセットアップ手順
 1. GDrive（Google Drive for Desktop）インストール＋同期
@@ -59,3 +62,10 @@
 - `即ランチャー.exe` — `%LOCALAPPDATA%\即ランチャー\` に配置（pythonw.exeコピー+アイコン書き換え済み）
 - `一発更新_即ランチャー.bat` — 1クリックセットアップ（Python自動インストール対応）
 - ショートカットは .pyw を引数で渡す方式なので、コード修正だけで反映される
+
+## 診断の勘どころ
+- 即ランチャー系の症状（無反応、固まる、等）が出たら **`/tmp/sokulauncher_launch.log`** を最初に見る
+- 各ステップ（`openFolder_ clicked` → `open_terminal START` → `zombie cleanup dur=...` → `create_window dur=... tty='...'` → `open_terminal END`）が記録される
+- 途中で途切れてたら、その直前が犯行現場
+- スクショ系は `/tmp/claude_screenshots/_screenshot.log`（透明キーボード側）
+- Rosetta 疑い: `lsof -p <PID> 2>/dev/null | grep -iE 'rosetta|oah'`
