@@ -11,6 +11,7 @@ import os
 import sys
 import subprocess
 import time
+import datetime
 
 import objc
 from Foundation import NSObject, NSMakePoint, NSTimer
@@ -88,10 +89,35 @@ def resolve_folder_path(name):
     return direct  # フォールバック
 
 
-def _run_applescript(script):
-    """AppleScriptを実行して結果を返す"""
-    result = subprocess.run(['osascript', '-e', script],
-                            capture_output=True, text=True)
+# 診断用ログ（ターミナル起動の各ステップを記録）
+_LAUNCH_LOG = '/tmp/sokulauncher_launch.log'
+
+
+def _log(msg):
+    """/tmp/sokulauncher_launch.log に1行追記する。失敗しても黙る。"""
+    try:
+        ts = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
+        with open(_LAUNCH_LOG, 'a') as f:
+            f.write(f'[{ts}] {msg}\n')
+    except Exception:
+        pass
+
+
+def _run_applescript(script, timeout=10, tag=''):
+    """AppleScriptを実行して結果を返す。タイムアウト・エラー時にログを残す。"""
+    t0 = time.time()
+    try:
+        result = subprocess.run(['osascript', '-e', script],
+                                capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        dur = time.time() - t0
+        _log(f'AS TIMEOUT tag={tag!r} dur={dur:.2f}s script={script[:120]!r}')
+        return ''
+    dur = time.time() - t0
+    if result.returncode != 0 or dur > 3.0:
+        _log(f'AS rc={result.returncode} dur={dur:.2f}s tag={tag!r} '
+             f'stderr={result.stderr.strip()[:200]!r} '
+             f'stdout={result.stdout.strip()[:100]!r}')
     return result.stdout.strip()
 
 
@@ -265,19 +291,23 @@ def _cleanup_zombie_tmux_sessions():
             if attached == '0':
                 subprocess.run(['tmux', 'kill-session', '-t', session_name],
                                capture_output=True, timeout=3)
-                NSLog(f"デタッチ済みtmuxセッションをkill: {session_name}")
+                _log(f"デタッチ済みtmuxセッションをkill: {session_name}")
     except Exception as e:
-        NSLog(f"tmuxゾンビ掃除でエラー（無視）: {e}")
+        _log(f"tmuxゾンビ掃除でエラー（無視）: {e}")
 
 
 # === メイン関数 ===
 
 def open_terminal(folder_name):
     """iTerm2ウィンドウを1つ起動し、再配置（キーボード同期含む）"""
+    _log(f'open_terminal START folder={folder_name!r}')
     full_path = resolve_folder_path(folder_name)
     terminal_was_running = _is_terminal_running()
+    _log(f'  iTerm was_running={terminal_was_running}')
     # デタッチ済み（×で閉じた等）のゾンビtmuxセッションを一括掃除
+    t0 = time.time()
     _cleanup_zombie_tmux_sessions()
+    _log(f'  zombie cleanup dur={time.time()-t0:.2f}s')
     # tmuxセッション名（ドットを除去、tmuxはドット入りセッション名を嫌う）
     tmux_session = folder_name.replace('.', '_')
     # 掃除後に残っているセッション＝アタッチ中（別ウィンドウで作業中）なので再接続
@@ -303,11 +333,16 @@ tell application "iTerm"
     delay 0.3
     return tty of current session of newWin
 end tell'''
-    tty = _run_applescript(script)
+    t0 = time.time()
+    tty = _run_applescript(script, timeout=15, tag='create_window')
+    _log(f'  create_window dur={time.time()-t0:.2f}s tty={tty!r}')
     if tty:
         _tty_titles[tty] = folder_name
+    else:
+        _log(f'  !! tty EMPTY — iTerm2 did not return tty (window may not have opened)')
     time.sleep(1.5)
     _reposition_windows()
+    _log(f'open_terminal END folder={folder_name!r}')
 
 
 def _refresh_titles():
@@ -574,13 +609,19 @@ class DesktopLauncher(NSObject):
     def openFolder_(self, sender):
         """フォルダを選んでターミナル起動"""
         name = sender.title()
+        _log(f'openFolder_ clicked name={name!r}')
         current = _get_terminal_window_count()
+        _log(f'  current terminal count={current}')
         if current >= MAX_TERMINALS:
             alert = NSAlert.alloc().init()
             alert.setMessageText_(f"{current}個のターミナルが開いています（最大{MAX_TERMINALS}）。\n先に閉じてください。")
             alert.runModal()
             return
-        open_terminal(name)
+        try:
+            open_terminal(name)
+        except Exception as e:
+            import traceback
+            _log(f'openFolder_ EXCEPTION: {e}\n{traceback.format_exc()}')
 
     def showAll_(self, sender):
         bring_terminals_to_front()
