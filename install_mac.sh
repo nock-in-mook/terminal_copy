@@ -84,13 +84,15 @@ cp "$SCRIPT_DIR/hammerspoon_init.lua" "$HS_CONFIG"
 echo "OK"
 
 # --- Step 4: Pythonスクリプトとランチャー.appをセットアップ ---
-echo "[4/5] スクリプトとランチャーをセットアップ..."
+echo "[4/4] スクリプトとランチャーをセットアップ..."
 pkill -f "folder_launcher.py" 2>/dev/null || true
 sleep 0.5
 mkdir -p "$LOCAL_DIR"
 cp "$SCRIPT_DIR/folder_launcher.py" "$LOCAL_PY"
 
-# SokuLauncher.app を作成（ログイン項目用の.appラッパー）
+# SokuLauncher.app を作成（手動起動用の.appラッパー。
+# 通常は Hammerspoon が launcher を spawn するので不要だが、
+# Finder からダブルクリックで起動したい場合や、緊急手動起動用に残す）
 APP_DIR="$LOCAL_DIR/SokuLauncher.app/Contents/MacOS"
 mkdir -p "$APP_DIR"
 
@@ -128,42 +130,37 @@ LAUNCHEREOF
 chmod +x "$APP_DIR/launcher"
 echo "OK"
 
-# --- Step 5: ログイン項目に登録（LaunchAgentは使わない） ---
-echo "[5/5] ログイン項目を登録..."
-
-# 旧LaunchAgentがあれば削除
+# --- ログイン項目: Hammerspoon のみ登録（launcher は Hammerspoon が spawn する） ---
+# 旧仕組みの掃除: SokuLauncher.app のログイン項目登録と launchd plist を削除する
+#   （open -a 経由の起動 / launchd 経由の再起動は、TCC chain が LaunchServices 由来に
+#   なって screencapture -i が長時間後に失効する現象を引き起こすため）
+osascript -e '
+tell application "System Events"
+    try
+        delete login item "SokuLauncher"
+    end try
+end tell' 2>/dev/null || true
 launchctl bootout "gui/$(id -u)/com.nock.folder-launcher" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/com.nock.folder-launcher.plist" 2>/dev/null || true
+launchctl bootout "gui/$(id -u)/com.nock.sokulauncher.daily" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/com.nock.sokulauncher.daily.plist" 2>/dev/null || true
 
-# SokuLauncherをログイン項目に登録
-SOKU_APP="$LOCAL_DIR/SokuLauncher.app"
-osascript -e "
-tell application \"System Events\"
-    try
-        delete login item \"SokuLauncher\"
-    end try
-    make login item at end with properties {path:\"$SOKU_APP\", hidden:true}
-end tell" 2>/dev/null || true
-
-# Hammerspoonもログイン項目に登録
+# Hammerspoon をログイン項目に登録（これ1本が launcher/透明キーボード/早朝再起動を管理）
 osascript -e '
 tell application "System Events"
     if not (exists login item "Hammerspoon") then
         make login item at end with properties {path:"/Applications/Hammerspoon.app", hidden:true}
     end if
 end tell' 2>/dev/null || true
-echo "OK"
+echo "OK (Hammerspoon が launcher を管理する方式)"
 
-# --- 起動 ---
+# --- 起動（Hammerspoon 起動時に launcher も自動 spawn される） ---
 echo ""
-echo "Hammerspoonを起動中..."
+echo "Hammerspoonを起動中（起動時に即ランチャーも自動で立ち上がります）..."
+pkill -f "folder_launcher.py" 2>/dev/null || true
 pkill -x Hammerspoon 2>/dev/null || true
 sleep 0.5
 open -a Hammerspoon
-
-echo "即ランチャーを起動中..."
-sleep 1
-open "$SOKU_APP"
 
 echo ""
 echo "=== インストール完了 ==="

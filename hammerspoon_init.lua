@@ -87,3 +87,56 @@ SokuConfigWatcher = hs.pathwatcher.new(GDRIVE_LUA, function(paths, flagTables)
     hs.alert.show("即ランチャー: 設定更新 → リロード")
     hs.timer.doAfter(0.5, function() hs.reload() end)
 end):start()
+
+-- ===================================================================
+-- launcher / 透明キーボードの起動・自動復旧管理
+-- Hammerspoon の子プロセスとして起動することで、TCC chain を安定化する。
+-- （open -a SokuLauncher.app 経由 = LaunchServices 由来の起動だと、
+--   長時間経過後に screencapture -i の TCC 判定が失効する現象があるため）
+-- ===================================================================
+local LAUNCHER_PY_LOCAL = os.getenv("HOME") .. "/Library/Application Support/SokuLauncher/folder_launcher.py"
+local LAUNCHER_PY_GDRIVE = os.getenv("HOME") .. "/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026/terminal_copy/folder_launcher.py"
+local RESTART_TRIGGER = "/tmp/sokulauncher_restart_requested"
+
+local function spawn_launcher()
+    -- GDrive から最新コードをローカルへ（自動更新）
+    hs.execute("mkdir -p '" .. os.getenv("HOME") .. "/Library/Application Support/SokuLauncher'")
+    hs.execute("cp '" .. LAUNCHER_PY_GDRIVE .. "' '" .. LAUNCHER_PY_LOCAL .. "' 2>/dev/null")
+    -- Hammerspoon 子として arch -arm64 で launcher を起動（孤児化させる）
+    hs.execute("( /usr/bin/arch -arm64 /usr/bin/python3 '" .. LAUNCHER_PY_LOCAL .. "' >/tmp/sokulauncher_stdout.log 2>/tmp/sokulauncher_stderr.log < /dev/null & )")
+end
+
+local function restart_launcher_and_keyboards()
+    hs.execute("pkill -9 -f folder_launcher.py 2>/dev/null")
+    hs.execute("pkill -9 -f transparent_keyboard_mac.py 2>/dev/null")
+    os.remove(RESTART_TRIGGER)
+    hs.timer.doAfter(1.0, function()
+        spawn_launcher()
+        -- --show-all で透明キーボードも同時に復元（常駐運用の場合）
+        hs.timer.doAfter(2.0, function()
+            hs.execute("( /usr/bin/arch -arm64 /usr/bin/python3 '" .. LAUNCHER_PY_LOCAL .. "' --show-all >/dev/null 2>&1 < /dev/null & )")
+        end)
+    end)
+    hs.alert.show("即ランチャー: 再起動")
+    local f = io.open("/tmp/sokulauncher_launch.log", "a")
+    if f then
+        f:write(string.format("[%s] hammerspoon: restart_launcher_and_keyboards\n", os.date("%Y-%m-%d %H:%M:%S")))
+        f:close()
+    end
+end
+
+-- Hammerspoon 起動時: launcher が動いてなければ spawn
+local pgrep_out = hs.execute("pgrep -f folder_launcher.py | head -1")
+if pgrep_out == nil or pgrep_out == "" then
+    spawn_launcher()
+end
+
+-- 毎日4:00 に予防的再起動（TCC陳腐化対策）
+SokuDailyRestartTimer = hs.timer.doAt("04:00", "1d", restart_launcher_and_keyboards)
+
+-- /tmp/sokulauncher_restart_requested を透明キーボードが touch すると復旧発火
+SokuRestartTriggerPoll = hs.timer.doEvery(3, function()
+    if hs.fs.attributes(RESTART_TRIGGER) then
+        restart_launcher_and_keyboards()
+    end
+end)
