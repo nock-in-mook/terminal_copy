@@ -10602,3 +10602,8 @@ mac版はどう？
 ## 即ランチャー_040_ランチャー無反応NSLog修正 (2026-04-18)
 
 即ランチャーのフォルダ選択で iTerm2 が「約50%の確率で開かない」長年バグを根本解決。真犯人は `_cleanup_zombie_tmux_sessions()` 内の `NSLog(...)` が未import で NameError → `except` 内でも再度 NSLog を呼んで二重例外 → `open_terminal` 全体が吹き飛ぶ構造だった。iTerm2 を ×で閉じた直後（＝デタッチ tmux セッション残存）だけ発動するため再現率がばらついていた。対処: `NSLog` を `_log()` に置換、`_run_applescript` に10秒タイムアウト＋失敗ログ追加、`openFolder_` / `open_terminal` の各ステップを `/tmp/sokulauncher_launch.log` に記録。ログ仕込み→再現→真犯人判明→修正→動作確認まで1セッションで完結。CLAUDE.mdハマりポイント#14に記録。診断の勘どころ: 即ランチャー系の症状が出たらまず `/tmp/sokulauncher_launch.log` を見る。コミット: `5e1addf`。
+
+---
+## 即ランチャー_041_スクショTCC陳腐化解決 (2026-04-19)
+
+前セッション（040）のランチャー無反応バグ修正の数時間後、透明キーボードのPrScrが再び失敗するようになった。Rosettaチェック（lsof grep rosetta|oah）は0件 → Rosettaじゃない。シェルから直接 `screencapture -x` を実行しても `could not create image from display` で失敗 → 画面収録権限自体が効いてない状態。システム設定で iTerm の画面収録権限が抜けてたので追加＆ON → 透明キーボードを kill→再起動（TCCキャッシュ再読込） → PrScr 2連続成功。前セッション039で解決したRosetta問題とは別パターン（TCC陳腐化）として CLAUDE.mdハマりポイント#13 に追記。診断の順序: (1) lsof で Rosetta 継承チェック → (2) シェルから `screencapture -x` で権限チェック → (3) iTerm/Python.app のトグル状態確認 → (4) キーボード再起動で TCC 再読込。コミット: `1ffcd85`。

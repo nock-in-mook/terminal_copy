@@ -4,34 +4,41 @@
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
 - Mac版: 2台とも **iTerm2 + ARM64 launcher** で安定動作中
 - Windows版: 安定稼働中
-- **今セッションで「即ランチャーからiTerm2を開いても50%くらい無反応」の長年バグを根本解決**
+- 直近で **ランチャー無反応バグ（NSLog未import）** と **スクショTCC陳腐化** の2件を根本解決
 
-## 今回の作業（セッション040）
+## 今回の作業（セッション041）
 
-### 即ランチャーのフォルダ選択が約50%無反応だった問題を根本修正
+### スクショTCCキャッシュ陳腐化問題の対処
+前セッション（040）でランチャー無反応バグ修正後、同日夕方に透明キーボードのPrScrが再び失敗するようになった。
 
-**症状**: 即ランチャーのメニューからフォルダを選んでも、無反応でiTerm2ウィンドウが開かない。再現率は五分五分、条件不明だった。
+**症状**: 透明キーボード PrScrで `could not create image from rect` が連発。シェルから直接 `screencapture -x` を試しても `could not create image from display` で失敗。
 
-**手順**: まず `folder_launcher.py` の `open_terminal` / `openFolder_` / `_run_applescript` に診断ログと AppleScript タイムアウト（10秒）を仕込み、`/tmp/sokulauncher_launch.log` に記録するようにした。ユーザーに再現してもらってログを取得 → 即座に真犯人判明。
-
-**真犯人**: `_cleanup_zombie_tmux_sessions()` 内で `NSLog(...)` を呼んでいるが **`NSLog` は import されていない**。デタッチ済み tmux セッションがあるときだけ kill 通知で `NSLog` が走り、`NameError: name 'NSLog' is not defined` で例外。`except` 内でも再度 `NSLog` を呼んでいるため二重例外になり、`open_terminal` 全体が吹き飛んで iTerm2 ウィンドウが開かない。
-
-**条件分岐の正体**: iTerm2 を ×で閉じた直後（＝デタッチ tmux セッション残存）だけ失敗。フレッシュな状態や、tmux 掃除対象がない場合は成功 → 再現率が「約50%」にばらついてた。
+**原因特定の流れ**:
+- プロセスの Rosetta チェック → 全部 ARM64（`lsof | grep -iE 'rosetta|oah'` で0件）
+- なので Rosetta は犯人じゃない
+- シェルから直接 `screencapture -x` もダメ → **画面収録権限自体が効いてない**状態
+- システム設定を開いて確認 → **iTerm の画面収録権限が無かった**（ユーザー操作で追加＆ON）
+- Python.app は最初から ON
 
 **対処**:
-- `NSLog` を `_log()`（`/tmp/sokulauncher_launch.log` 書き込みヘルパー）に置換
-- `_run_applescript` にタイムアウト10秒＋失敗ログを追加（iTerm2無反応時の無限待ち防止）
-- `openFolder_` / `open_terminal` の各ステップを `/tmp/sokulauncher_launch.log` に記録
-- CLAUDE.md ハマりポイント#14 として全記録
+- iTerm の画面収録権限を追加＆ON
+- 透明キーボードを kill → 再起動（TCC キャッシュ再読込）
+  ```
+  pkill -f transparent_keyboard_mac.py
+  arch -arm64 /usr/bin/python3 "/Users/nock_re/Library/Application Support/SokuLauncher/folder_launcher.py" --show-all
+  ```
 
-**動作確認**: 3連続成功、デタッチtmuxの kill 通知も `_log` 経由で正しく記録された（`デタッチ済みtmuxセッションをkill: Chat`）。
+**動作確認**: PrScr 2連続成功（16:33:17 rc=0 saved=True size=92217、16:34:11 rc=0 saved=True size=33969）
+
+**CLAUDE.mdハマりポイント#13に予防策として追記**: 「TCCキャッシュ陳腐化」パターンの識別方法（シェルから `-x` も失敗したらこれ）＋対処コマンド。
 
 ### コミット
-- `5e1addf` ランチャー無反応バグ修正: NSLog未import + 診断ログ整備
+- `1ffcd85` ハマりポイント#13に追記: TCCキャッシュ陳腐化で同エラー再発するパターン
 
-## 前回の作業（セッション039）
-- 透明キーボードのPrScrが Rosetta 継承で失敗していた問題を `arch -arm64` 明示で解決
-- 2台の Apple Silicon Mac で動作確認済み
+## 前セッションの作業（セッション040）
+
+### 即ランチャー無反応バグ（約50%の確率で開かない）を根本修正
+真犯人は `_cleanup_zombie_tmux_sessions()` 内の `NSLog` が未import で NameError。デタッチ tmux 有時のみ発動。対処: `NSLog` → `_log()` 置換、`_run_applescript` に10秒タイムアウト、診断ログ `/tmp/sokulauncher_launch.log` 整備。CLAUDE.mdハマりポイント#14 に記録。コミット: `5e1addf`。
 
 ## 次のアクション
 - 特になし（terminal_copy は安定稼働継続）
@@ -40,7 +47,7 @@
   pkill -f folder_launcher.py
   open -a "/Users/nock_re/Library/Application Support/SokuLauncher/SokuLauncher.app"
   ```
-- 急がなければ次の Mac 再起動時に自動反映
+- もしもう一台の Mac で同じ TCC 陳腐化が出たら、上のpkill手順を参考に透明キーボードも再起動する
 
 ## Mac版の構成
 - `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + **iTerm2** + tmux連携 + ゾンビ掃除 + **arch -arm64 キーボード起動** + **診断ログ `/tmp/sokulauncher_launch.log`**）
@@ -53,7 +60,7 @@
 2. `cd /Users/.../マイドライブ/_Apps2026/terminal_copy && git pull && bash install_mac.sh`
 3. システム設定 → プライバシーとセキュリティ:
    - **アクセシビリティ**: Hammerspoon.app + Python.app（Xcode.app内） をON
-   - **画面収録**: Python.app（Xcode.app内） をON
+   - **画面収録**: Python.app（Xcode.app内） + **iTerm** を ON ← iTerm も必要
 4. iTerm2 Profile設定（CLAUDE.md Step 3 参照）
 5. SokuLauncher.app ダブルクリック起動 → デスクトップダブルクリックで動作確認
 
@@ -64,8 +71,9 @@
 - ショートカットは .pyw を引数で渡す方式なので、コード修正だけで反映される
 
 ## 診断の勘どころ
-- 即ランチャー系の症状（無反応、固まる、等）が出たら **`/tmp/sokulauncher_launch.log`** を最初に見る
-- 各ステップ（`openFolder_ clicked` → `open_terminal START` → `zombie cleanup dur=...` → `create_window dur=... tty='...'` → `open_terminal END`）が記録される
-- 途中で途切れてたら、その直前が犯行現場
-- スクショ系は `/tmp/claude_screenshots/_screenshot.log`（透明キーボード側）
-- Rosetta 疑い: `lsof -p <PID> 2>/dev/null | grep -iE 'rosetta|oah'`
+- ランチャー系の症状（無反応、固まる、等）: **`/tmp/sokulauncher_launch.log`** を最初に見る
+- スクショ系: **`/var/folders/.../T/claude_screenshots/_screenshot.log`**（透明キーボード側）
+- スクショ失敗時:
+  1. `lsof -p <PID> 2>/dev/null | grep -iE 'rosetta|oah'` → 何か出たら Rosetta 継承問題（#13）
+  2. シェルから `screencapture -x /tmp/test.png` → `could not create image from display` なら TCC 陳腐化（#13 追記）→ iTerm/Python.app 権限確認＋透明キーボード再起動
+  3. `-x` 成功するが `-i` だけ失敗なら、別の原因を調査
