@@ -10607,3 +10607,8 @@ mac版はどう？
 ## 即ランチャー_041_スクショTCC陳腐化解決 (2026-04-19)
 
 前セッション（040）のランチャー無反応バグ修正の数時間後、透明キーボードのPrScrが再び失敗するようになった。Rosettaチェック（lsof grep rosetta|oah）は0件 → Rosettaじゃない。シェルから直接 `screencapture -x` を実行しても `could not create image from display` で失敗 → 画面収録権限自体が効いてない状態。システム設定で iTerm の画面収録権限が抜けてたので追加＆ON → 透明キーボードを kill→再起動（TCCキャッシュ再読込） → PrScr 2連続成功。前セッション039で解決したRosetta問題とは別パターン（TCC陳腐化）として CLAUDE.mdハマりポイント#13 に追記。診断の順序: (1) lsof で Rosetta 継承チェック → (2) シェルから `screencapture -x` で権限チェック → (3) iTerm/Python.app のトグル状態確認 → (4) キーボード再起動で TCC 再読込。コミット: `1ffcd85`。
+
+---
+## 即ランチャー_042_TCC失効をiTerm経由spawnで根治 (2026-04-19)
+
+セッション041 の「透明キーボード kill で TCC 再読込」は翌日また失効する対症療法だったため、根治に挑戦。原因は **SokuLauncher.app のログイン項目起動による LaunchServices 由来の responsible chain が長時間で陳腐化する** ことと判明（シェル直 `-i` は通るが、透明キーボード経由だけ失敗、というパターンで切り分け）。複数試行錯誤: (1) launchd 早朝再起動 → launchd 経由も responsible が launchd になって NG、さらに復旧の無限ループに陥る (2) Hammerspoon 直接 spawn → Hammerspoon は LSUIElement なので子の `screencapture -i` overlay UI が却下される (3) **Hammerspoon → AppleScript → iTerm → launcher の間接起動** が正解だった。iTerm の create window + `write text "(nohup ... &); exit"` でセッションを即畳み、launcher 側は `_SOKU_DAEMONIZED` フラグ + `subprocess.Popen` 自己 re-exec で独立。ユーザー視点 iTerm ±0。daemonize で `os.fork()` は不可（AppKit 済み Python だと `NSResponder initialize ... fork() Crashing` で即死）という重要な知見も得た。自動復旧は透明キーボードが trigger file を touch → Hammerspoon が 3 秒ポーリングで検知して kill→再 spawn。CLAUDE.md #15 を大幅更新。コミット: `e916cdb`, `8357c48`（terminal_copy）, `ded348c`（透明キーボード）。

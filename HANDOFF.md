@@ -2,78 +2,86 @@
 
 ## 現在の状況
 - GitHubリポジトリ: https://github.com/nock-in-mook/terminal_copy
-- Mac版: 2台とも **iTerm2 + ARM64 launcher** で安定動作中
+- Mac版: 2台とも **iTerm2 + ARM64 launcher** で稼働
 - Windows版: 安定稼働中
-- 直近で **ランチャー無反応バグ（NSLog未import）** と **スクショTCC陳腐化** の2件を根本解決
+- **長年の「1日経つと透明キーボードのPrScrが無言失敗する」問題を根治**（セッション042）
 
-## 今回の作業（セッション041）
+## 今回の作業（セッション042）
 
-### スクショTCCキャッシュ陳腐化問題の対処
-前セッション（040）でランチャー無反応バグ修正後、同日夕方に透明キーボードのPrScrが再び失敗するようになった。
+### スクショ TCC 失効問題の根治: Hammerspoon → AppleScript → iTerm 経由 spawn
+朝、透明キーボードの PrScr が即失敗する症状が再発。前セッション（041）の「TCC陳腐化」対処（kill → 再起動）では一時しのぎで、**翌日また失敗する** ことが判明。根本原因と恒久対策を探った。
 
-**症状**: 透明キーボード PrScrで `could not create image from rect` が連発。シェルから直接 `screencapture -x` を試しても `could not create image from display` で失敗。
+**原因の切り分け**:
+- シェル直接 `screencapture -x/-R/-i` は全部成功 → TCC target（Python.app）の権限は生きてる
+- 透明キーボード経由 `-i` だけ失敗 → プロセス側の **responsible chain 陳腐化**
+- `open -a SokuLauncher.app`（ログイン項目起動）経由だと LaunchServices responsible chain で長時間後に失効する、と判明
+- Hammerspoon 直接 spawn も失敗 → Hammerspoon は LSUIElement（Dock非表示のバックグラウンドアプリ）なので、子プロセスの `screencapture -i` overlay UI が却下される模様
+- **前景アプリ iTerm 配下で起動した launcher 配下の透明キーボードは通る** ことを確認
 
-**原因特定の流れ**:
-- プロセスの Rosetta チェック → 全部 ARM64（`lsof | grep -iE 'rosetta|oah'` で0件）
-- なので Rosetta は犯人じゃない
-- シェルから直接 `screencapture -x` もダメ → **画面収録権限自体が効いてない**状態
-- システム設定を開いて確認 → **iTerm の画面収録権限が無かった**（ユーザー操作で追加＆ON）
-- Python.app は最初から ON
-
-**対処**:
-- iTerm の画面収録権限を追加＆ON
-- 透明キーボードを kill → 再起動（TCC キャッシュ再読込）
+**解決設計**:
+- **SokuLauncher.app のログイン項目登録を廃止**。Hammerspoon をログイン項目に登録
+- Hammerspoon 起動時に `hs.osascript.applescript` で iTerm にコマンド投入:
   ```
-  pkill -f transparent_keyboard_mac.py
-  arch -arm64 /usr/bin/python3 "/Users/nock_re/Library/Application Support/SokuLauncher/folder_launcher.py" --show-all
+  tell application "iTerm"
+      set newWindow to (create window with default profile)
+      tell current session of newWindow to write text "(nohup arch -arm64 python3 folder_launcher.py ... & sleep 2; nohup arch -arm64 python3 folder_launcher.py --show-all ... &); exit"
+  end tell
   ```
+- iTerm session で `& disown` + `exit` → iTerm window は即 close、launcher は独立
+- launcher 側は `_SOKU_DAEMONIZED` フラグ + `subprocess.Popen` 自己 re-exec で完全独立（iTerm から切れても生き残る）
 
-**動作確認**: PrScr 2連続成功（16:33:17 rc=0 saved=True size=92217、16:34:11 rc=0 saved=True size=33969）
+**自動復旧と早朝予防**:
+- 透明キーボード `_trigger_recovery()` は失敗検知で `/tmp/sokulauncher_restart_requested` を touch するだけに変更
+- Hammerspoon が 3 秒ポーリングでそれを検知 → 全 kill → 同じ AppleScript 経路で再 spawn
+- `hs.timer.doAt("04:00", "1d", ...)` で毎日4時に予防的再起動
 
-**CLAUDE.mdハマりポイント#13に予防策として追記**: 「TCCキャッシュ陳腐化」パターンの識別方法（シェルから `-x` も失敗したらこれ）＋対処コマンド。
+**重要な発見（daemonize の罠）**:
+AppKit import 済みの Python で `os.fork()` すると Apple Silicon 上で `NSResponder initialize ... fork() called ... Crashing` で即クラッシュする（Objective-C runtime と pthread の競合）。daemonize には必ず **`subprocess.Popen` で exec し直す方式** を使う。CLAUDE.md #15 に記載。
 
 ### コミット
-- `1ffcd85` ハマりポイント#13に追記: TCCキャッシュ陳腐化で同エラー再発するパターン
-
-## 前セッションの作業（セッション040）
-
-### 即ランチャー無反応バグ（約50%の確率で開かない）を根本修正
-真犯人は `_cleanup_zombie_tmux_sessions()` 内の `NSLog` が未import で NameError。デタッチ tmux 有時のみ発動。対処: `NSLog` → `_log()` 置換、`_run_applescript` に10秒タイムアウト、診断ログ `/tmp/sokulauncher_launch.log` 整備。CLAUDE.mdハマりポイント#14 に記録。コミット: `5e1addf`。
+- `e916cdb` Hammerspoon経由launcher管理に再設計: open-a起動によるTCC chain陳腐化を根治（最初の実装、後で AppleScript 経由に上書き）
+- `8357c48` launcher を AppleScript 経由で iTerm から spawn する方式に変更（最終形）
+- 透明キーボード側: `ded348c` PrScr失敗時の自動復旧を Hammerspoon 依頼方式に変更
 
 ## 次のアクション
-- 特になし（terminal_copy は安定稼働継続）
-- もう一台の Mac への反映は **launcher 再起動だけ**でOK（GDrive 経由で `folder_launcher.py` が自動同期される仕組み）
-  ```
-  pkill -f folder_launcher.py
-  open -a "/Users/nock_re/Library/Application Support/SokuLauncher/SokuLauncher.app"
-  ```
-- もしもう一台の Mac で同じ TCC 陳腐化が出たら、上のpkill手順を参考に透明キーボードも再起動する
+- **再起動後も効くか次回ログイン時に検証**（Hammerspoon が起動時に AppleScript で iTerm 経由で launcher spawn する流れ）
+- もう一台の Mac も GDrive 同期で `hammerspoon_init.lua` / `folder_launcher.py` が伝わる。次回起動時から新方式が効く
+- 何かおかしくなったら `/tmp/hs_spawn.log`、`/tmp/sokulauncher_stdout.log`、`/tmp/sokulauncher_stderr.log` を見る
 
-## Mac版の構成
-- `folder_launcher.py` — メイン（NSApplication + NSEvent + NSMenu + NSStatusItem + **iTerm2** + tmux連携 + ゾンビ掃除 + **arch -arm64 キーボード起動** + **診断ログ `/tmp/sokulauncher_launch.log`**）
-- `hammerspoon_init.lua` — Hammerspoon設定（グローバル変数でGC対策済み、GDrive監視で自動リロード、透明キーボード除外）
-- `install_mac.sh` — Mac版インストールスクリプト（tmux・Hammerspoon・iTerm2・SF Mono Terminalフォント・**ARM64 launcher** 自動セットアップ、ログイン項目方式）
-- `SokuLauncher.app` — ログイン項目用.appラッパー（`~/Library/Application Support/SokuLauncher/` に配置、**arch -arm64** で exec、起動時に GDrive から最新 folder_launcher.py を自動コピー）
+## 動作確認済み事項
+- Hammerspoon 再起動 → iTerm 経由で launcher 56516 + 透明キーボード 3 つ自動 spawn
+- その配下で PrScr 成功（`ss_20260419_172513_733143.png`、タスクリスト画面が正しく撮れた）
+- iTerm window は exit で即 close、ユーザー視点のウィンドウ総数±0
+
+## Mac版の構成（2026-04-19 更新）
+- `folder_launcher.py` — メイン（**_SOKU_DAEMONIZED フラグによる subprocess.Popen 自己 re-exec 付き**）
+- `hammerspoon_init.lua` — Hammerspoon 設定:
+  - デスクトップダブルクリック検知（従来通り）
+  - **launcher の管理（AppleScript 経由で iTerm に spawn 依頼）**
+  - 毎日 04:00 の予防的再起動
+  - `/tmp/sokulauncher_restart_requested` の 3 秒ポーリングで自動復旧
+- `install_mac.sh` — **Hammerspoon のみログイン項目に登録**（SokuLauncher.app 登録は削除済み）
+- `restart_launcher.sh` — 手動復旧用の薄いラッパー（`touch /tmp/sokulauncher_restart_requested` するだけ）
+- `SokuLauncher.app` — 手動起動用の wrapper は残す（緊急時の Finder ダブルクリック用）
 
 ## 新規Macセットアップ手順
 1. GDrive（Google Drive for Desktop）インストール＋同期
 2. `cd /Users/.../マイドライブ/_Apps2026/terminal_copy && git pull && bash install_mac.sh`
 3. システム設定 → プライバシーとセキュリティ:
-   - **アクセシビリティ**: Hammerspoon.app + Python.app（Xcode.app内） をON
-   - **画面収録**: Python.app（Xcode.app内） + **iTerm** を ON ← iTerm も必要
+   - **アクセシビリティ**: Hammerspoon.app + Python.app（Xcode.app内）+ **iTerm** を ON
+   - **画面収録**: Python.app（Xcode.app内）+ **iTerm** を ON
+   - **オートメーション**: Hammerspoon → iTerm を許可（AppleScript 経由でコマンド打つため）
 4. iTerm2 Profile設定（CLAUDE.md Step 3 参照）
-5. SokuLauncher.app ダブルクリック起動 → デスクトップダブルクリックで動作確認
-
-## Windows版の構成
-- `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
-- `即ランチャー.exe` — `%LOCALAPPDATA%\即ランチャー\` に配置（pythonw.exeコピー+アイコン書き換え済み）
-- `一発更新_即ランチャー.bat` — 1クリックセットアップ（Python自動インストール対応）
-- ショートカットは .pyw を引数で渡す方式なので、コード修正だけで反映される
+5. Hammerspoon 起動すれば launcher 自動 spawn → 動作確認
 
 ## 診断の勘どころ
-- ランチャー系の症状（無反応、固まる、等）: **`/tmp/sokulauncher_launch.log`** を最初に見る
-- スクショ系: **`/var/folders/.../T/claude_screenshots/_screenshot.log`**（透明キーボード側）
-- スクショ失敗時:
-  1. `lsof -p <PID> 2>/dev/null | grep -iE 'rosetta|oah'` → 何か出たら Rosetta 継承問題（#13）
-  2. シェルから `screencapture -x /tmp/test.png` → `could not create image from display` なら TCC 陳腐化（#13 追記）→ iTerm/Python.app 権限確認＋透明キーボード再起動
-  3. `-x` 成功するが `-i` だけ失敗なら、別の原因を調査
+- ランチャーが立ち上がらない: `/tmp/hs_spawn.log` → AppleScript の ok/err / pgrep 判定結果を見る
+- スクショ失敗が再発: シェル直 `screencapture -i /tmp/x.png` が通るか確認
+  - 通る: 透明キーボードプロセス特有 → `touch /tmp/sokulauncher_restart_requested` で復旧
+  - 通らない: TCC の target 側の問題 → システム設定で画面収録権限を再確認
+- iTerm window が画面に残ってる: AppleScript の `exit` がうまく効いてない → Profile の「When the session ends」を「Close the session」に設定
+
+## Windows版の構成（変更なし）
+- `folder_launcher_win.pyw` — メイン（pystray + tkinter + WH_MOUSE_LL）
+- `即ランチャー.exe` — `%LOCALAPPDATA%\即ランチャー\` に配置
+- `一発更新_即ランチャー.bat` — 1クリックセットアップ
