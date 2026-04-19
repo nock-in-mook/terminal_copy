@@ -98,17 +98,43 @@ local LAUNCHER_PY_LOCAL = os.getenv("HOME") .. "/Library/Application Support/Sok
 local LAUNCHER_PY_GDRIVE = os.getenv("HOME") .. "/Library/CloudStorage/GoogleDrive-yagukyou@gmail.com/マイドライブ/_Apps2026/terminal_copy/folder_launcher.py"
 local RESTART_TRIGGER = "/tmp/sokulauncher_restart_requested"
 
-local function spawn_launcher()
-    -- GDrive から最新コードをローカルへ（自動更新）
-    hs.execute("mkdir -p '" .. os.getenv("HOME") .. "/Library/Application Support/SokuLauncher'")
-    hs.execute("cp '" .. LAUNCHER_PY_GDRIVE .. "' '" .. LAUNCHER_PY_LOCAL .. "' 2>/dev/null")
-    -- Hammerspoon 子として arch -arm64 で launcher を起動（孤児化させる）
-    hs.execute("( /usr/bin/arch -arm64 /usr/bin/python3 '" .. LAUNCHER_PY_LOCAL .. "' >/tmp/sokulauncher_stdout.log 2>/tmp/sokulauncher_stderr.log < /dev/null & )")
+local function _spawn_log(msg)
+    local f = io.open("/tmp/hs_spawn.log", "a")
+    if f then f:write(string.format("[%s] %s\n", os.date("%Y-%m-%d %H:%M:%S"), msg)); f:close() end
+end
+
+function spawn_launcher()
+    _spawn_log("spawn_launcher: start")
+    os.execute("mkdir -p '" .. os.getenv("HOME") .. "/Library/Application Support/SokuLauncher'")
+    os.execute("cp '" .. LAUNCHER_PY_GDRIVE .. "' '" .. LAUNCHER_PY_LOCAL .. "' 2>/dev/null")
+    -- AppleScript 経由で iTerm 配下の shell から launcher を起動する。
+    -- Hammerspoon（LSUIElement）由来の spawn だと screencapture -i の TCC が通らない
+    -- 問題を回避するため、前景アプリ iTerm の responsible chain を使う。
+    -- iTerm session 内で nohup & disown し、直後に exit で session を畳む。
+    -- launcher 側は _SOKU_DAEMONIZED フラグで subprocess.Popen 自己再起動して独立する。
+    -- 1行で launcher + 1秒後 --show-all + exit をまとめて shell に投入。
+    -- delay を AppleScript に持たせず一瞬で AppleScript を完了させる（Hammerspoon を blockしない）。
+    local cmd = string.format(
+        "(nohup /usr/bin/arch -arm64 /usr/bin/python3 '%s' " ..
+        ">/tmp/sokulauncher_stdout.log 2>/tmp/sokulauncher_stderr.log </dev/null & " ..
+        "sleep 2; nohup /usr/bin/arch -arm64 /usr/bin/python3 '%s' --show-all " ..
+        ">/dev/null 2>&1 </dev/null &); exit",
+        LAUNCHER_PY_LOCAL, LAUNCHER_PY_LOCAL)
+    local applescript = string.format([[
+tell application "iTerm"
+    set newWindow to (create window with default profile)
+    tell current session of newWindow to write text "%s"
+end tell
+]], cmd:gsub('"', '\\"'))
+    local ok, err = hs.osascript.applescript(applescript)
+    _spawn_log(string.format("applescript ok=%s err=%s", tostring(ok), tostring(err)))
 end
 
 local function restart_launcher_and_keyboards()
-    hs.execute("pkill -9 -f folder_launcher.py 2>/dev/null")
-    hs.execute("pkill -9 -f transparent_keyboard_mac.py 2>/dev/null")
+    -- pkill -f は hs.execute 由来の bash プロセス自身も巻き込んでしまうため、
+    -- ps→awk でPIDを抽出してから kill する。
+    hs.execute("ps auxww | awk '/[P]ython .*folder_launcher.py/ {print $2}' | xargs -r kill -9 2>/dev/null")
+    hs.execute("ps auxww | awk '/[P]ython .*transparent_keyboard_mac.py/ {print $2}' | xargs -r kill -9 2>/dev/null")
     os.remove(RESTART_TRIGGER)
     hs.timer.doAfter(1.0, function()
         spawn_launcher()
@@ -126,9 +152,16 @@ local function restart_launcher_and_keyboards()
 end
 
 -- Hammerspoon 起動時: launcher が動いてなければ spawn
-local pgrep_out = hs.execute("pgrep -f folder_launcher.py | head -1")
-if pgrep_out == nil or pgrep_out == "" then
+-- 注: `pgrep -f folder_launcher.py` は hs.execute が bash 経由で走らせる際、
+-- bash 自身のコマンドラインが "folder_launcher.py" を含むためマッチしてしまう。
+-- そのため `ps | grep '[f]older_launcher.py'` の自己除外パターンを使う。
+_spawn_log("init.lua reached launcher-check section")
+local pgrep_out = hs.execute("ps auxww | grep '[P]ython .*folder_launcher.py' | head -1") or ""
+_spawn_log(string.format("check result: len=%d content=%q", #pgrep_out, pgrep_out:sub(1, 200)))
+if pgrep_out:match("%S") == nil then
     spawn_launcher()
+else
+    _spawn_log("existing launcher detected, skip spawn")
 end
 
 -- 毎日4:00 に予防的再起動（TCC陳腐化対策）

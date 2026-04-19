@@ -691,6 +691,25 @@ if __name__ == "__main__":
             open_terminal(sys.argv[idx + 1])
         sys.exit(0)
 
+    # 常駐モードのみ: Hammerspoon/iTerm どの経路から起動されても親プロセスから
+    # 完全に独立させる。AppKit import 済みなので os.fork() は NSResponder の
+    # Objective-C runtime とコンフリクトして crash する（macOS 固有の制約）。
+    # 代わりに subprocess.Popen で自分を exec し直し、start_new_session=True で
+    # 新セッションにする（exec で Objective-C runtime はリセットされるので安全）。
+    if os.environ.get('_SOKU_DAEMONIZED') != '1':
+        new_env = os.environ.copy()
+        new_env['_SOKU_DAEMONIZED'] = '1'
+        subprocess.Popen(
+            [sys.executable] + sys.argv,
+            env=new_env,
+            start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+        sys.exit(0)
+
     # 多重起動防止（PIDファイル方式）
     import signal
     pidfile = "/tmp/sokulauncher.pid"
