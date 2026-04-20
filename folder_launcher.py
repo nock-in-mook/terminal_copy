@@ -535,11 +535,25 @@ class DesktopLauncher(NSObject):
 
     @objc.python_method
     def _show_menu(self, location):
-        """ポップアップメニューをクリック位置に表示"""
+        """ポップアップメニューをクリック位置に表示（画面端でもはみ出さない）"""
         app = NSApplication.sharedApplication()
         app.activateIgnoringOtherApps_(True)
         menu = self._build_menu()
-        menu.popUpMenuPositioningItem_atLocation_inView_(None, location, None)
+
+        # クリック位置の下に余裕がなければ、メニュー途中の項目を基準点にして上方向にも展開
+        item_count = menu.numberOfItems()
+        estimated_item_h = 22  # NSMenuItemの高さ概算（px）
+        estimated_menu_h = item_count * estimated_item_h
+        space_below = location.y  # AppKit座標: y=0が画面下端
+
+        positioning_item = None
+        if space_below < estimated_menu_h:
+            # 下に収まるアイテム数から、基準にすべき項目を逆算
+            items_below = int(space_below / estimated_item_h)
+            target_idx = max(0, min(item_count - items_below, item_count - 1))
+            positioning_item = menu.itemAtIndex_(target_idx)
+
+        menu.popUpMenuPositioningItem_atLocation_inView_(positioning_item, location, None)
 
     # === メニューアクション（ObjCセレクタ） ===
 
