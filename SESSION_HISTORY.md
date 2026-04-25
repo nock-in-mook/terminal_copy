@@ -10734,3 +10734,6 @@ GDrive同期で Mac 側に反映されるから、次に Hammerspoon で launche
 ↓
 (作業)
 ↓
+
+---
+## terminal_copy_037 (2026-04-25)
